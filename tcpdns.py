@@ -3,7 +3,7 @@
 # cody by zhouzhenster@gmail.com
 
 # ver: 0.2 update 2011-10-23
-#           使用了SocketServer 模块，实现多线程udp server，提高了效率
+#           use SocketServer to run a multithread udp server
 
 import os, sys
 import socket
@@ -12,9 +12,9 @@ import threading
 import SocketServer
 import traceback
 
-DHOST = '156.154.70.1'    #OpenDNS 服务器的地址
-DPORT = 53                  #默认端口是53
-TIMEOUT = 20                #超时设置为5秒
+DHOST = '156.154.70.1'    # remote dns server address
+DPORT = 53                # default dns port 53
+TIMEOUT = 20              # set timeout 5 second
 
 
 #-------------------------------------------------------------
