@@ -1,9 +1,6 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
-#详情见RFC 1035
 # cody by zhouzhenster@gmail.com
-
-# 使用TCP DNS 摆脱GFW干扰
 
 # ver: 0.2 update 2011-10-23
 #           使用了SocketServer 模块，实现多线程udp server，提高了效率
