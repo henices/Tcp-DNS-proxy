@@ -18,9 +18,8 @@ TIMEOUT = 20              # set timeout 5 second
 
 
 #-------------------------------------------------------------
-# 字符串的 Hexdump，Cool :)
-# 默认宽度为16
-# 返回值为格式化的字符串
+# Hexdump，Cool :)
+# default width 16
 #--------------------------------------------------------------
 def hexdump( src, width=16 ):
     FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
