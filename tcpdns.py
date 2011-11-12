@@ -52,7 +52,7 @@ def bytetodomain(s):
     return domain
 
 #--------------------------------------------------
-# query dns
+# tcp dns request
 #---------------------------------------------------
 def QueryDNS(server, port, querydata):
     # length
@@ -60,7 +60,7 @@ def QueryDNS(server, port, querydata):
     sendbuf = Buflen + querydata
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(TIMEOUT) #设置超时时间
+        s.settimeout(TIMEOUT) # set socket timeout
         s.connect((server, int(port)))
         s.send(sendbuf)
         data = s.recv(2048)
@@ -73,7 +73,7 @@ def QueryDNS(server, port, querydata):
     return data
 
 #-----------------------------------------------------
-# 处理转发
+# send udp dns respones back to client program
 #----------------------------------------------------
 def transfer(querydata, addr, server):
     if not querydata: return
@@ -87,7 +87,7 @@ def transfer(querydata, addr, server):
     response = QueryDNS(DHOST, DPORT, querydata)
     if response:
         # udp dns packet no length
-            server.sendto(response[2:], addr)
+        server.sendto(response[2:], addr)
     return
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
@@ -115,6 +115,9 @@ if __name__ == "__main__":
     print '>> Now you can set dns server to 127.0.0.1'
 
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
+    # on my ubuntu uid is 1000, change it 
+    # comment out below line on windows platform
+    os.setuid(1000)
 
     server.serve_forever()
     server.shutdown()
