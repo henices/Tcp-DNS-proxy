@@ -137,7 +137,7 @@ if __name__ == "__main__":
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it 
     # comment out below line on windows platform
-    os.setuid(1000)
+    #os.setuid(1000)
 
     server.serve_forever()
     server.shutdown()
