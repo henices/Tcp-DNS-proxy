@@ -4,6 +4,16 @@
 
 # ver: 0.2 update 2011-10-23
 #           use SocketServer to run a multithread udp server
+# update:
+# 2012-04-16, add more public dns servers support tcp dns query
+#  8.8.8.8        google
+#  8.8.4.4        google
+#  156.154.70.1   Dnsadvantage
+#  156.154.71.1   Dnsadvantage
+#  208.67.222.222 OpenDNS
+#  208.67.220.220 OpenDNS
+#  198.153.192.1  Norton
+#  198.153.194.1  Norton
 
 import os, sys
 import socket
@@ -11,8 +21,17 @@ import struct
 import threading
 import SocketServer
 import traceback
+import random
 
-DHOST = '156.154.70.1'    # remote dns server address
+DHOSTS = ['156.154.70.1', # remote dns server address list
+         '8.8.8.8',
+         '8.8.4.4',
+         '156.154.71.1',
+         #'208.67.222.222',
+         #'208.67.220.220',
+         #'198.153.192.1',
+         #'198.153.194.1'
+         ]
 DPORT = 53                # default dns port 53
 TIMEOUT = 20              # set timeout 5 second
 
@@ -83,7 +102,8 @@ def transfer(querydata, addr, server):
     print 'domain:%s, qtype:%x, thread:%d' % \
          (domain, qtype, threading.activeCount())
     sys.stdout.flush()
-
+    choose = random.sample(xrange(len(DHOSTS)), 1)[0]
+    DHOST = DHOSTS[choose]
     response = QueryDNS(DHOST, DPORT, querydata)
     if response:
         # udp dns packet no length
