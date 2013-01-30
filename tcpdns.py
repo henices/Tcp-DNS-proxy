@@ -40,7 +40,7 @@ TIMEOUT = 20              # set timeout 5 second
 
 
 #-------------------------------------------------------------
-# Hexdump��Cool :)
+# Hexdump Cool :)
 # default width 16
 #--------------------------------------------------------------
 def hexdump( src, width=16 ):
