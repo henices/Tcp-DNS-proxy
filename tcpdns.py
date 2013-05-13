@@ -22,6 +22,13 @@ import threading
 import SocketServer
 import traceback
 import random
+try:
+    import gevent
+    from gevent import monkey
+except:
+    print "Install gevent will save a lot of CPU time"
+else:
+    monkey.patch_all()
 
 DHOSTS = ['156.154.70.1', # remote dns server address list
          '8.8.8.8',
@@ -111,6 +118,14 @@ def transfer(querydata, addr, server):
     if response:
         # udp dns packet no length
         server.sendto(response[2:], addr)
+
+        try:
+            import dns
+            from dns import message as m
+            print "query:\n\t","\n\t".join(str(m.from_wire(querydata)).split("\n")),"\n================"
+            print "response:\n\t","\n\t".join(str(m.from_wire(response[2:])).split("\n")),"\n================"
+        except ImportError:
+            print "Install dnspython module will give you more response infomation."
     return
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
@@ -137,7 +152,7 @@ if __name__ == "__main__":
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
 
-    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
+    server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it 
     # comment out below line on windows platform
     #os.setuid(1000)
