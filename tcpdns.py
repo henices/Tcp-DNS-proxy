@@ -122,7 +122,7 @@ def transfer(querydata, addr, server):
         try:
             import dns
             from dns import message as m
-            print m.from_wire(response[2:])
+            print m.from_wire(response[2:]),"\n================"
         except ImportError:
             print "Install dnspython module will give you more response infomation."
     return
