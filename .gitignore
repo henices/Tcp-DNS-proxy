@@ -1,2 +1,24 @@
 
 *.swp
+
+.idea/.name
+
+*.iml
+
+.idea/dictionaries/linkerlin.xml
+
+.idea/encodings.xml
+
+.idea/misc.xml
+
+.idea/modules.xml
+
+.idea/other.xml
+
+.idea/scopes/scope_settings.xml
+
+.idea/testrunner.xml
+
+.idea/vcs.xml
+
+.idea/workspace.xml

@@ -118,6 +118,13 @@ def transfer(querydata, addr, server):
     if response:
         # udp dns packet no length
         server.sendto(response[2:], addr)
+
+        try:
+            import dns
+            from dns import message as m
+            print m.from_wire(response[2:])
+        except ImportError:
+            print "Install dnspython module will give you more response infomation."
     return
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
@@ -144,7 +151,7 @@ if __name__ == "__main__":
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
 
-    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
+    server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it 
     # comment out below line on windows platform
     #os.setuid(1000)
