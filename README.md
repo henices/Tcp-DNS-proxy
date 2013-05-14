@@ -11,3 +11,21 @@ nameserver 127.0.0.1
 
 3. run the script
   $ sudo python tcpdns.py
+
+## Dependencies
+
+### libraries
+* [libev] (http://libevent.org/)
+
+### python moudules
+
+* [gevent] (https://github.com/surfly/gevent)
+* [dnspython] (http://www.dnspython.org/)
+
+## INSTALL
+
+```
+  sudo apt-get install libevent-dev
+  sudo pip install gevent
+  sudo pip install dnspython
+```
