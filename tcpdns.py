@@ -38,13 +38,13 @@ DHOSTS = ['156.154.70.1', # remote dns server address list
          '8.8.8.8',
          '8.8.4.4',
          '156.154.71.1',
-         #'208.67.222.222',
-         #'208.67.220.220',
+         '208.67.222.222',
+         '208.67.220.220',
          #'198.153.192.1',
          #'198.153.194.1',
-         #'74.207.247.4',
-         #'209.244.0.3',
-         #'8.26.56.26'
+         '74.207.247.4',
+         '209.244.0.3',
+         '8.26.56.26'
          ]
 DPORT = 53                # default dns port 53
 TIMEOUT = 20              # set timeout 5 second
@@ -92,6 +92,7 @@ def QueryDNS(server, port, querydata):
     # length
     Buflen = struct.pack('!h', len(querydata))
     sendbuf = Buflen + querydata
+    data=None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(TIMEOUT) # set socket timeout
@@ -100,11 +101,10 @@ def QueryDNS(server, port, querydata):
         data = s.recv(2048)
     except:
         print traceback.print_exc(sys.stdout)
+    finally:
         if s: s.close()
-        return
+        return data
 
-    if s: s.close()
-    return data
 
 #----------------------------------------------------
 # show dns packet information
@@ -135,14 +135,17 @@ def transfer(querydata, addr, server):
     sys.stdout.flush()
     choose = random.sample(xrange(len(DHOSTS)), 1)[0]
     DHOST = DHOSTS[choose]
-    response = QueryDNS(DHOST, DPORT, querydata)
-    if response:
-        # udp dns packet no length
-        server.sendto(response[2:], addr)
-        if int(VERBOSE) > 0:
-            show_info(querydata, 0)
-            show_info(response[2:], 1)
-
+    response=None
+    for i in range(9):
+        response = QueryDNS(DHOST, DPORT, querydata)
+        if response:
+            # udp dns packet no length
+            server.sendto(response[2:], addr)
+            if int(VERBOSE) > 0:
+                show_info(querydata, 0)
+                show_info(response[2:], 1)
+    if response is None:
+        print "Tried 9 times and failed to resolve a domain."
     return
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
