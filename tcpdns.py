@@ -6,6 +6,9 @@
 #           use SocketServer to run a multithread udp server
 # update:
 # 2012-04-16, add more public dns servers support tcp dns query
+# 2013-05-14  merge code from linkerlin, add gevent support
+
+
 #  8.8.8.8        google
 #  8.8.4.4        google
 #  156.154.70.1   Dnsadvantage
@@ -22,6 +25,7 @@ import threading
 import SocketServer
 import traceback
 import random
+import optparse
 try:
     import gevent
     from gevent import monkey
@@ -44,6 +48,7 @@ DHOSTS = ['156.154.70.1', # remote dns server address list
          ]
 DPORT = 53                # default dns port 53
 TIMEOUT = 20              # set timeout 5 second
+VERBOSE = 0
 
 
 #-------------------------------------------------------------
@@ -69,7 +74,7 @@ def bytetodomain(s):
     domain = ''
     i = 0
     length = struct.unpack('!B', s[0:1])[0]
-  
+
     while length != 0 :
         i += 1
         domain += s[i:i+length]
@@ -77,7 +82,7 @@ def bytetodomain(s):
         length = struct.unpack('!B', s[i:i+1])[0]
         if length != 0 :
             domain += '.'
-  
+
     return domain
 
 #--------------------------------------------------
@@ -101,6 +106,22 @@ def QueryDNS(server, port, querydata):
         return data
 
 
+#----------------------------------------------------
+# show dns packet information
+#----------------------------------------------------
+def show_info(data, direction):
+    try:
+        from dns import message as m
+    except ImportError:
+        print "Install dnspython module will give you more response infomation."
+    else:
+        if direction == 0:
+            print "query:\n\t", "\n\t".join(str(m.from_wire(data)).split("\n"))
+            print "\n================"
+        elif direction ==1:
+            print "response:\n\t","\n\t".join(str(m.from_wire(data)).split("\n"))
+            print "\n================"
+
 #-----------------------------------------------------
 # send udp dns respones back to client program
 #----------------------------------------------------
@@ -120,16 +141,9 @@ def transfer(querydata, addr, server):
         if response:
             # udp dns packet no length
             server.sendto(response[2:], addr)
-
-            try:
-                import dns
-                from dns import message as m
-                print "query:\n\t","\n\t".join(str(m.from_wire(querydata)).split("\n")),"\n================"
-                print "response:\n\t","\n\t".join(str(m.from_wire(response[2:])).split("\n")),"\n================"
-            except ImportError:
-                print "Install dnspython module will give you more response infomation."
-            finally:
-                break
+            if int(VERBOSE) > 0:
+                show_info(querydata, 0)
+                show_info(response[2:], 1)
     if response is None:
         print "Tried 9 times and failed to resolve a domain."
     return
@@ -158,8 +172,13 @@ if __name__ == "__main__":
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
 
+    parser = optparse.OptionParser()
+    parser.add_option("-v", dest="verbose", default="0", help="Verbosity level, 0-2, default is 0")
+    options, _ = parser.parse_args()
+    VERBOSE = options.verbose
+
     server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
-    # on my ubuntu uid is 1000, change it 
+    # on my ubuntu uid is 1000, change it
     # comment out below line on windows platform
     #os.setuid(1000)
 
