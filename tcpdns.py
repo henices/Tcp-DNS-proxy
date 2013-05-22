@@ -100,7 +100,7 @@ def QueryDNS(server, port, querydata):
         s.send(sendbuf)
         data = s.recv(2048)
     except Exception, e:
-        print '[ERROR] QueryDNS: ' %  e.message
+        print '[ERROR] QueryDNS: %s' %  e.message
     finally:
         if s: s.close()
         return data
