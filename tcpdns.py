@@ -99,8 +99,8 @@ def QueryDNS(server, port, querydata):
         s.connect((server, int(port)))
         s.send(sendbuf)
         data = s.recv(2048)
-    except:
-        print traceback.print_exc(sys.stdout)
+    except Exception, e:
+        print '[ERROR] QueryDNS: ' %  e.message
     finally:
         if s: s.close()
         return data
@@ -118,7 +118,7 @@ def show_info(data, direction):
         if direction == 0:
             print "query:\n\t", "\n\t".join(str(m.from_wire(data)).split("\n"))
             print "\n================"
-        elif direction ==1:
+        elif direction == 1:
             print "response:\n\t","\n\t".join(str(m.from_wire(data)).split("\n"))
             print "\n================"
 
@@ -146,7 +146,7 @@ def transfer(querydata, addr, server):
                 show_info(response[2:], 1)
             break
     if response is None:
-        print "Tried 9 times and failed to resolve a domain."
+        print "[ERROR] Tried 9 times and failed to resolve %s" % domain
     return
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
