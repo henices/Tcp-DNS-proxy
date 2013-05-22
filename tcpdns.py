@@ -133,10 +133,10 @@ def transfer(querydata, addr, server):
     print 'domain:%s, qtype:%x, thread:%d' % \
          (domain, qtype, threading.activeCount())
     sys.stdout.flush()
-    choose = random.sample(xrange(len(DHOSTS)), 1)[0]
-    DHOST = DHOSTS[choose]
     response=None
     for i in range(9):
+        choose = random.sample(xrange(len(DHOSTS)), 1)[0]
+        DHOST = DHOSTS[choose]
         response = QueryDNS(DHOST, DPORT, querydata)
         if response:
             # udp dns packet no length
@@ -144,6 +144,7 @@ def transfer(querydata, addr, server):
             if int(VERBOSE) > 0:
                 show_info(querydata, 0)
                 show_info(response[2:], 1)
+            break
     if response is None:
         print "Tried 9 times and failed to resolve a domain."
     return
