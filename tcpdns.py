@@ -34,6 +34,8 @@ except:
 else:
     monkey.patch_all()
 
+from connections import main_conn_pool
+
 DHOSTS = ['156.154.70.1', # remote dns server address list
          '8.8.8.8',
          '8.8.4.4',
@@ -93,16 +95,19 @@ def QueryDNS(server, port, querydata):
     Buflen = struct.pack('!h', len(querydata))
     sendbuf = Buflen + querydata
     data=None
+    conn=None
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(TIMEOUT) # set socket timeout
-        s.connect((server, int(port)))
+        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #s.settimeout(TIMEOUT) # set socket timeout
+        #s.connect((server, int(port)))
+        conn=main_conn_pool.getConnection(server,port)
+        s=conn.getSokcet()
         s.send(sendbuf)
         data = s.recv(2048)
     except Exception, e:
         print '[ERROR] QueryDNS: %s' %  e.message
     finally:
-        if s: s.close()
+        main_conn_pool.releaseConnection(conn)
         return data
 
 
