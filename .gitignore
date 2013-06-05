@@ -1,1 +1,6 @@
 *.swp
+*.so
+*.exe
+.idea
+*.pyc
+*.build
