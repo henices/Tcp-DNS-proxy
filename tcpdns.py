@@ -7,6 +7,7 @@
 # update:
 # 2012-04-16, add more public dns servers support tcp dns query
 # 2013-05-14  merge code from linkerlin, add gevent support
+# 2013-06-24  add lru cache support
 
 
 #  8.8.8.8        google
@@ -88,6 +89,8 @@ def bytetodomain(s):
 #--------------------------------------------------
 # tcp dns request
 #---------------------------------------------------
+from pylru import lrudecorator
+@lrudecorator(100)
 def QueryDNS(server, port, querydata):
     # length
     Buflen = struct.pack('!h', len(querydata))
@@ -134,9 +137,8 @@ def transfer(querydata, addr, server):
          (domain, qtype, threading.activeCount())
     sys.stdout.flush()
     response=None
-    for i in range(9):
-        choose = random.sample(xrange(len(DHOSTS)), 1)[0]
-        DHOST = DHOSTS[choose]
+    for i in range(len(DHOSTS)):
+        DHOST = DHOSTS[i]
         response = QueryDNS(DHOST, DPORT, querydata)
         if response:
             # udp dns packet no length
