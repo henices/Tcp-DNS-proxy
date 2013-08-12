@@ -1,23 +1,26 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 # cody by zhouzhenster@gmail.com
-
-# ver: 0.2 update 2011-10-23
-#           use SocketServer to run a multithread udp server
-# update:
+#
+# Change log:
+#
+# 2011-10-23, use SocketServer to run a multithread udp server
 # 2012-04-16, add more public dns servers support tcp dns query
-# 2013-05-14  merge code from linkerlin, add gevent support
-# 2013-06-24  add lru cache support
+# 2013-05-14, merge code from linkerlin, add gevent support
+# 2013-06-24, add lru cache support
+# 2013-08-13, add ipv6 support
 
 
-#  8.8.8.8        google
-#  8.8.4.4        google
-#  156.154.70.1   Dnsadvantage
-#  156.154.71.1   Dnsadvantage
-#  208.67.222.222 OpenDNS
-#  208.67.220.220 OpenDNS
-#  198.153.192.1  Norton
-#  198.153.194.1  Norton
+#  8.8.8.8                 Google
+#  8.8.4.4                 Google
+#  156.154.70.1            Dnsadvantage
+#  156.154.71.1            Dnsadvantage
+#  208.67.222.222          OpenDNS
+#  208.67.220.220          OpenDNS
+#  198.153.192.1           Norton
+#  198.153.194.1           Norton
+#  2001:4860:4860::8888    Google ipv6
+#  2001:4860:4860::8844    Google ipv6
 
 import os, sys
 import socket
@@ -35,7 +38,7 @@ except:
 else:
     monkey.patch_all()
 
-DHOSTS = ['156.154.70.1', # remote dns server address list
+DHOSTS = ['156.154.70.1',
          '8.8.8.8',
          '8.8.4.4',
          '156.154.71.1',
@@ -47,9 +50,14 @@ DHOSTS = ['156.154.70.1', # remote dns server address list
          '209.244.0.3',
          '8.26.56.26'
          ]
+
+DHOSTS_V6 = ['2001:4860:4860::8888',
+             '2001:4860:4860::8844']
+
 DPORT = 53                # default dns port 53
 TIMEOUT = 20              # set timeout 5 second
-VERBOSE = 0
+VERBOSE = 0               # display level
+IPV6 = 0
 
 
 #-------------------------------------------------------------
@@ -97,7 +105,8 @@ def QueryDNS(server, port, querydata):
     sendbuf = Buflen + querydata
     data=None
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        af = socket.AF_INET6 if int(IPV6) > 0 else socket.AF_INET
+        s = socket.socket(af, socket.SOCK_STREAM)
         s.settimeout(TIMEOUT) # set socket timeout
         s.connect((server, int(port)))
         s.send(sendbuf)
@@ -137,8 +146,10 @@ def transfer(querydata, addr, server):
          (domain, qtype, threading.activeCount())
     sys.stdout.flush()
     response=None
-    for i in range(len(DHOSTS)):
-        DHOST = DHOSTS[i]
+
+    SERVERS = DHOSTS_V6 if int(IPV6) > 0 else DHOSTS
+    for i in range(len(SERVERS)):
+        DHOST = SERVERS[i]
         response = QueryDNS(DHOST, DPORT, querydata)
         if response:
             # udp dns packet no length
@@ -148,11 +159,13 @@ def transfer(querydata, addr, server):
                 show_info(response[2:], 1)
             break
     if response is None:
-        print "[ERROR] Tried 9 times and failed to resolve %s" % domain
-    return
+        print "[ERROR] Tried many times and failed to resolve %s" % domain
+
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
     def __init__(self, s, t):
+        af = socket.AF_INET6 if int(IPV6) > 0 else socket.AF_INET
+        self.address_family = af
         SocketServer.UDPServer.__init__(self, s, t)
 
 class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
@@ -177,10 +190,13 @@ if __name__ == "__main__":
 
     parser = optparse.OptionParser()
     parser.add_option("-v", dest="verbose", default="0", help="Verbosity level, 0-2, default is 0")
+    parser.add_option("-e", "--ipv6", dest="ipv6", default="0", help="Use ipv6 Dns query, default is ipv4")
     options, _ = parser.parse_args()
     VERBOSE = options.verbose
+    IPV6 = options.ipv6
 
-    server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
+    server_addr = '::1' if int(IPV6) > 0 else '127.0.0.1'
+    server = ThreadedUDPServer((server_addr, 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it
     # comment out below line on windows platform
     #os.setuid(1000)
