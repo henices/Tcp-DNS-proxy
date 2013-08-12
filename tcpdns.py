@@ -38,6 +38,9 @@ except:
 else:
     monkey.patch_all()
 
+NAME = 'TCP DNS PROXY'
+VERSION = '1.0'
+
 DHOSTS = ['156.154.70.1',
          '8.8.8.8',
          '8.8.4.4',
@@ -184,9 +187,10 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
 # main entry
 #------------------------------------------------------
 if __name__ == "__main__":
+    print '>> %s, version %s' % (NAME, VERSION)
     print '>> Please wait program init....'
     print '>> Init finished!'
-    print '>> Now you can set dns server to 127.0.0.1'
+    print '>> Now you can set dns server to 127.0.0.1 (::1)'
 
     parser = optparse.OptionParser()
     parser.add_option("-v", dest="verbose", default="0", help="Verbosity level, 0-2, default is 0")
