@@ -31,13 +31,13 @@ try:
     import gevent
     from gevent import monkey
 except:
-    print "Install gevent will save a lot of CPU time"
+    print "Install gevent will save a lot of CPU time\n"
 else:
     monkey.patch_all()
 
-DHOSTS = ['156.154.70.1', # remote dns server address list
-         '8.8.8.8',
+DHOSTS = ['8.8.8.8',
          '8.8.4.4',
+         '156.154.70.1',
          '156.154.71.1',
          '208.67.222.222',
          '208.67.220.220',
@@ -50,6 +50,7 @@ DHOSTS = ['156.154.70.1', # remote dns server address list
 DPORT = 53                # default dns port 53
 TIMEOUT = 20              # set timeout 5 second
 VERBOSE = 0
+CACHE = True
 
 
 #-------------------------------------------------------------
@@ -90,7 +91,8 @@ def bytetodomain(s):
 # tcp dns request
 #---------------------------------------------------
 from pylru import lrudecorator
-@lrudecorator(100)
+cache_size = 30 if CACHE else 0
+@lrudecorator(cache_size)
 def QueryDNS(server, port, querydata):
     # length
     Buflen = struct.pack('!h', len(querydata))
@@ -171,14 +173,17 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
 # main entry
 #------------------------------------------------------
 if __name__ == "__main__":
-    print '>> Please wait program init....'
-    print '>> Init finished!'
-    print '>> Now you can set dns server to 127.0.0.1'
 
     parser = optparse.OptionParser()
     parser.add_option("-v", dest="verbose", default="0", help="Verbosity level, 0-2, default is 0")
+    parser.add_option("-d", "--disable", action="store_false", dest="cache", default=True, help="Disable LRU cache")
     options, _ = parser.parse_args()
     VERBOSE = options.verbose
+    CACHE = options.cache
+
+    print '>> Please wait program init....'
+    print '>> Init finished!'
+    print '>> Now you can set dns server to 127.0.0.1'
 
     server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it
