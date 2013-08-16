@@ -505,6 +505,8 @@ class lrudecorator(object):
             except KeyError:
                 pass
 
+            for key in self.cache.keys(): print key
+
             value = func(*args)
             self.cache[args] = value
             return value

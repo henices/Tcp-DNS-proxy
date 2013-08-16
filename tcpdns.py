@@ -8,6 +8,7 @@
 # 2012-04-16, add more public dns servers support tcp dns query
 # 2013-05-14  merge code from linkerlin, add gevent support
 # 2013-06-24  add lru cache support
+# 2013-08-14  add option to disable cache
 
 
 #  8.8.8.8        google
@@ -27,6 +28,8 @@ import SocketServer
 import traceback
 import random
 import optparse
+from pylru import lrucache
+
 try:
     import gevent
     from gevent import monkey
@@ -47,10 +50,10 @@ DHOSTS = ['8.8.8.8',
          '209.244.0.3',
          '8.26.56.26'
          ]
-DPORT = 53                # default dns port 53
-TIMEOUT = 20              # set timeout 5 second
-VERBOSE = 0
-CACHE = True
+
+DPORT = 53
+TIMEOUT = 20
+LRUCACHE = None
 
 
 #-------------------------------------------------------------
@@ -90,9 +93,6 @@ def bytetodomain(s):
 #--------------------------------------------------
 # tcp dns request
 #---------------------------------------------------
-from pylru import lrudecorator
-cache_size = 30 if CACHE else 0
-@lrudecorator(cache_size)
 def QueryDNS(server, port, querydata):
     # length
     Buflen = struct.pack('!h', len(querydata))
@@ -110,23 +110,6 @@ def QueryDNS(server, port, querydata):
         if s: s.close()
         return data
 
-
-#----------------------------------------------------
-# show dns packet information
-#----------------------------------------------------
-def show_info(data, direction):
-    try:
-        from dns import message as m
-    except ImportError:
-        print "Install dnspython module will give you more response infomation."
-    else:
-        if direction == 0:
-            print "query:\n\t", "\n\t".join(str(m.from_wire(data)).split("\n"))
-            print "\n================"
-        elif direction == 1:
-            print "response:\n\t","\n\t".join(str(m.from_wire(data)).split("\n"))
-            print "\n================"
-
 #-----------------------------------------------------
 # send udp dns respones back to client program
 #----------------------------------------------------
@@ -135,23 +118,41 @@ def transfer(querydata, addr, server):
 
     domain = bytetodomain(querydata[12:-4])
     qtype = struct.unpack('!h', querydata[-4:-2])[0]
+
     print 'domain:%s, qtype:%x, thread:%d' % \
          (domain, qtype, threading.activeCount())
     sys.stdout.flush()
+
     response=None
+    t_id = querydata[:2]
+    key = querydata[2:].encode('hex')
+
+    if LRUCACHE is not None:
+        try:
+            response = LRUCACHE[key]
+            server.sendto(t_id + response[4:], addr)
+        except KeyError:
+            pass
+
+    if response is not None:
+        return
+
     for i in range(len(DHOSTS)):
         DHOST = DHOSTS[i]
         response = QueryDNS(DHOST, DPORT, querydata)
-        if response:
-            # udp dns packet no length
-            server.sendto(response[2:], addr)
-            if int(VERBOSE) > 0:
-                show_info(querydata, 0)
-                show_info(response[2:], 1)
-            break
+
+        if response is None:
+            continue
+
+        if LRUCACHE is not None:
+            LRUCACHE[key] = response
+
+        # udp dns packet no length
+        server.sendto(response[2:], addr)
+        break
+
     if response is None:
-        print "[ERROR] Tried 9 times and failed to resolve %s" % domain
-    return
+        print "[ERROR] Tried many times and failed to resolve %s" % domain
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
     def __init__(self, s, t):
@@ -175,20 +176,21 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
 if __name__ == "__main__":
 
     parser = optparse.OptionParser()
-    parser.add_option("-v", dest="verbose", default="0", help="Verbosity level, 0-2, default is 0")
-    parser.add_option("-d", "--disable", action="store_false", dest="cache", default=True, help="Disable LRU cache")
+    parser.add_option("-c", "--cached", action="store_true", dest="cache", default=False, help="Enable LRU cache")
     options, _ = parser.parse_args()
-    VERBOSE = options.verbose
     CACHE = options.cache
+
+    if CACHE:
+        LRUCACHE = lrucache(100)
 
     print '>> Please wait program init....'
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
 
-    server = ThreadedUDPServer(('0.0.0.0', 53), ThreadedUDPRequestHandler)
+    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it
     # comment out below line on windows platform
-    #os.setuid(1000)
+    os.setuid(1000)
 
     server.serve_forever()
     server.shutdown()
