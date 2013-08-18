@@ -28,7 +28,6 @@ import SocketServer
 import traceback
 import random
 import optparse
-import platform
 from pylru import lrucache
 
 try:
@@ -189,10 +188,6 @@ if __name__ == "__main__":
     print '>> Now you can set dns server to 127.0.0.1'
 
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
-    # on my ubuntu uid is 1000, change it
-    # comment out below line on windows platform
-    if 'Windows' not in platform.system():
-        os.setuid(os.getuid())
 
     server.serve_forever()
     server.shutdown()
