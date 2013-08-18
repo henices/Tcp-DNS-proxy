@@ -28,6 +28,7 @@ import SocketServer
 import traceback
 import random
 import optparse
+import platform
 from pylru import lrucache
 
 try:
@@ -190,7 +191,8 @@ if __name__ == "__main__":
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
     # on my ubuntu uid is 1000, change it
     # comment out below line on windows platform
-    os.setuid(1000)
+    if 'Windows' not in platform.system():
+        os.setuid(os.getuid())
 
     server.serve_forever()
     server.shutdown()
