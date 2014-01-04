@@ -11,7 +11,6 @@
 # 2013-08-14  add option to disable cache
 # 2014-01-04  add option "servers", "timeout" @jinxingxing               
 
-
 #  8.8.8.8        google
 #  8.8.4.4        google
 #  156.154.70.1   Dnsadvantage
@@ -35,7 +34,7 @@ try:
     import gevent
     from gevent import monkey
 except:
-    print "Install gevent will save a lot of CPU time\n"
+    print "*** Install gevent will save a lot of CPU time\n"
 else:
     monkey.patch_all()
 
@@ -192,7 +191,10 @@ if __name__ == "__main__":
         DHOSTS = options.dns_servers.strip(" ,").split(',')
     if options.cache:
         LRUCACHE = lrucache(100)
-        
+    
+    if os.name == 'nt':
+        os.system('title tcpdnsproxy')
+    print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
     print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
     print '>> Query Timeout: %f' % (TIMEOUT)
     print '>> Enable Cache: %r' % (options.cache)
