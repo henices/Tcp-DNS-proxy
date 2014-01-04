@@ -13,7 +13,7 @@ setup(
     zipfile = None,
     # targets to build
     console = [{
-                "script": r"tcpdns.py",
+                "script": r"../tcpdns.py",
                 "icon_resources":[
                     #(0,"1367526275_127248.ico"),
                     #(1,"1367526275_127248.ico")
