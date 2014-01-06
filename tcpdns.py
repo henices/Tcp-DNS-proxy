@@ -9,7 +9,7 @@
 # 2013-05-14  merge code from linkerlin, add gevent support
 # 2013-06-24  add lru cache support
 # 2013-08-14  add option to disable cache
-
+# 2014-01-04  add option "servers", "timeout" @jinxingxing               
 
 #  8.8.8.8        google
 #  8.8.4.4        google
@@ -34,7 +34,7 @@ try:
     import gevent
     from gevent import monkey
 except:
-    print "Install gevent will save a lot of CPU time\n"
+    print "*** Install gevent will save a lot of CPU time\n"
 else:
     monkey.patch_all()
 
@@ -137,10 +137,13 @@ def transfer(querydata, addr, server):
     if response is not None:
         return
 
-    for i in range(len(DHOSTS)):
-        DHOST = DHOSTS[i]
-        response = QueryDNS(DHOST, DPORT, querydata)
-
+    for DHOST in DHOSTS:
+        if DHOST.find(':') >= 0:
+            ip, port = DHOST.split(':')
+        else:
+            ip, port = DHOST, DPORT
+            
+        response = QueryDNS(ip, port, querydata)
         if response is None:
             continue
 
@@ -177,18 +180,30 @@ if __name__ == "__main__":
 
     parser = optparse.OptionParser()
     parser.add_option("-c", "--cached", action="store_true", dest="cache", default=False, help="Enable LRU cache")
+    parser.add_option("-s", "--servers", action="store", dest="dns_servers", 
+                            help="""Specifies the DNS server, separated by "," , default port 53 (eg. 8.8.8.8:53,8.8.4.4:53)""")
+    parser.add_option("-t", "--timeout", action="store", dest="query_timeout", help="DNS query timeout")
     options, _ = parser.parse_args()
-    CACHE = options.cache
-
-    if CACHE:
+    
+    if options.query_timeout:
+        TIMEOUT = float(options.query_timeout)
+    if options.dns_servers:
+        DHOSTS = options.dns_servers.strip(" ,").split(',')
+    if options.cache:
         LRUCACHE = lrucache(100)
-
+    
+    if os.name == 'nt':
+        os.system('title tcpdnsproxy')
+    print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
+    print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
+    print '>> Query Timeout: %f' % (TIMEOUT)
+    print '>> Enable Cache: %r' % (options.cache)
+    
     print '>> Please wait program init....'
+    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
-
-    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
-
+    
     server.serve_forever()
     server.shutdown()
 
