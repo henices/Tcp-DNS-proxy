@@ -1,4 +1,4 @@
-如何使用 tcpdns.py python 脚本 ?
+如何使用 tcpdns.py 脚本 ?
 -------------------------------
 
 ### Linux/Mac
