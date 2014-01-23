@@ -1,30 +1,30 @@
-
 如何使用 tcpdns.py python 脚本 ?
 -------------------------------
 
 ### Linux/Mac
 
-    1.    修改本机DNS为127.0.0.1
+ 1.    修改本机DNS为127.0.0.1
 
-       ```bash
-      $ vi /etc/resolve.conf
-      nameserver 127.0.0.1
-      ```
-    2.    重启网络
+   ```bash
+  $ vi /etc/resolve.conf
+  nameserver 127.0.0.1
+  ```
+ 2.    重启网络
 
-      ```bash
-      $ sudo /etc/init.d/networking restart
-      ```
-    3.    运行脚本
+  ```bash
+  $ sudo /etc/init.d/networking restart
+  ```
+ 3.    运行脚本
 
-      ```bash
-      $ sudo python tcpdns.py
-      ```
+  ```bash
+  $ sudo python tcpdns.py
+  ```
 
 ### Windows
 
-    1.    修改本机DNS为127.0.0.1
-    2.    运行tcpdns.exe
+ 1.    修改本机DNS为127.0.0.1
+ 
+ 2.    运行tcpdns.exe
 
 
 脚本的主要参数
@@ -43,7 +43,11 @@ Options:
                         DNS query timeout
 ```
 
+使用举例，
 
+```bash
+python tcpdns.py -c
+```
 
 脚本依赖
 ----------------------------
@@ -55,7 +59,7 @@ Options:
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
 
-### python模块安装方法
+### python模块安装
 
 ``` bash
   sudo apt-get install libevent-dev
