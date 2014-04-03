@@ -35,6 +35,7 @@ import struct
 import threading
 import SocketServer
 import optparse
+import third_party
 from pylru import lrucache
 
 DHOSTS = [
