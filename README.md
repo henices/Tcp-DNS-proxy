@@ -27,6 +27,7 @@ Dependencies
 ### python moudules
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
+   * [python-daemon] (https://pypi.python.org/pypi/python-daemon)
 
 INSTALL
 ---------------------
@@ -34,6 +35,7 @@ INSTALL
 ``` bash
   sudo apt-get install libevent-dev
   sudo pip install gevent
+  sudo pip install python-daemon
 ```
 
 LICENSE

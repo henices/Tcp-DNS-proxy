@@ -58,13 +58,14 @@ python tcpdns.py -c
 ### python模块
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
+   * [python-daemon] (https://pypi.python.org/pypi/python-daemon)
 
 ### python模块安装
 
 ``` bash
   sudo apt-get install libevent-dev
   sudo pip install gevent
-  sudo pip install dnspython
+  sudo pip install python-daemon
 ```
 
 LICENSE
