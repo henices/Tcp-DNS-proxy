@@ -1,4 +1,3 @@
-
 How to use this python script ?
 -------------------------------
 
@@ -27,7 +26,6 @@ Dependencies
 
 ### python moudules
    * [gevent] (https://github.com/surfly/gevent)
-   * [dnspython] (http://www.dnspython.org/)
    * [pylru] (https://github.com/jlhutch/pylru)
 
 INSTALL
@@ -36,7 +34,6 @@ INSTALL
 ``` bash
   sudo apt-get install libevent-dev
   sudo pip install gevent
-  sudo pip install dnspython
 ```
 
 LICENSE
