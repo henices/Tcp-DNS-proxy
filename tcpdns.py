@@ -11,6 +11,7 @@
 # 2013-06-24  add lru cache support
 # 2013-08-14  add option to disable cache
 # 2014-01-04  add option "servers", "timeout" @jinxingxing
+# 2014-04-04  support daemon process on unix like platform
 
 #  8.8.8.8        google
 #  8.8.4.4        google
@@ -27,6 +28,7 @@ except:
     print "*** Install gevent will save a lot of CPU time\n"
 else:
     monkey.patch_all()
+
 
 import os
 import sys
@@ -188,6 +190,12 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         transfer(data, addr, socket)
 
 
+def main():
+    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
+    server.serve_forever()
+    server.shutdown()
+
+
 if __name__ == "__main__":
 
     parser = optparse.OptionParser()
@@ -198,6 +206,8 @@ if __name__ == "__main__":
                       default port 53 (eg. 8.8.8.8: 53, 8.8.4.4: 53)")
     parser.add_option("-t", "--timeout", action="store",
                       dest="query_timeout", help="DNS query timeout")
+    parser.add_option("-d", "--daemon", action="store_true", dest="daemon",
+                      help="use daemon process")
     options, _ = parser.parse_args()
 
     if options.query_timeout:
@@ -207,17 +217,23 @@ if __name__ == "__main__":
     if options.cache:
         LRUCACHE = lrucache(100)
 
-    if os.name == 'nt':
-        os.system('title tcpdnsproxy')
     print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
     print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
     print '>> Query Timeout: %f' % (TIMEOUT)
     print '>> Enable Cache: %r' % (options.cache)
-
-    print '>> Please wait program init....'
-    server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
-    print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
 
-    server.serve_forever()
-    server.shutdown()
+    os_name = os.name
+
+    if options.daemon:
+        if os_name == 'nt':
+            raise Exception("Windows doesn't support daemon process")
+        else:
+            import daemon
+            print '>>> Run code in daemon process'
+
+    try:
+        with daemon.DaemonContext():
+            main()
+    except:
+        main()
