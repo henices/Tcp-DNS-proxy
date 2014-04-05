@@ -1,3 +1,4 @@
 [submodule "third_party/pylru"]
 	path = third_party/pylru
 	url = https://github.com/jlhutch/pylru.git
+	ignore = dirty
