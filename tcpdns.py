@@ -229,8 +229,11 @@ if __name__ == "__main__":
         if os_name == 'nt':
             raise Exception("Windows doesn't support daemon process")
         else:
-            import daemon
-            print '>>> Run code in daemon process'
+            try:
+                import daemon
+                print '>>> Run code in daemon process'
+            except ImportError:
+                print '*** Please install python-daemon'
 
     try:
         with daemon.DaemonContext():
