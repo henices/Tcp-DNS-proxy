@@ -223,10 +223,8 @@ if __name__ == "__main__":
     print '>> Enable Cache: %r' % (options.cache)
     print '>> Now you can set dns server to 127.0.0.1'
 
-    os_name = os.name
-
     if options.daemon:
-        if os_name == 'nt':
+        if os.name == 'nt':
             raise Exception("Windows doesn't support daemon process")
         else:
             try:
@@ -236,7 +234,7 @@ if __name__ == "__main__":
                 print '*** Please install python-daemon'
 
     try:
-        with daemon.DaemonContext():
+        with daemon.DaemonContext(detach_process=True):
             main()
     except:
         main()
