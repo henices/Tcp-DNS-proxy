@@ -7,11 +7,12 @@
 #
 # 2011-10-23  use SocketServer to run a multithread udp server
 # 2012-04-16  add more public dns servers support tcp dns query
-# 2013-05-14  merge code from linkerlin, add gevent support
+# 2013-05-14  merge code from @linkerlin, add gevent support
 # 2013-06-24  add lru cache support
 # 2013-08-14  add option to disable cache
 # 2014-01-04  add option "servers", "timeout" @jinxingxing
 # 2014-04-04  support daemon process on unix like platform
+# 2014-05-27  support udp dns server on non-standard port
 
 #  8.8.8.8        google
 #  8.8.4.4        google
@@ -41,11 +42,15 @@ import third_party
 from pylru import lrucache
 
 DHOSTS = [
-    '8.8.8.8', '8.8.4.4', '156.154.70.1', '156.154.71.1',
+    '61.31.233.1', '8.8.8.8', '8.8.4.4', '156.154.70.1', '156.154.71.1',
     '208.67.222.222', '208.67.220.220', '74.207.247.4', '209.244.0.3',
     '8.26.56.26']
-
 DPORT = 53
+
+UDPMODE = False
+UDPHOSTS = ['208.67.222.222']
+UDPPORT = 5353
+
 TIMEOUT = 20
 LRUCACHE = None
 
@@ -95,12 +100,20 @@ def QueryDNS(server, port, querydata):
     Returns:
         tcp dns response data
     """
-    # length
-    Buflen = struct.pack('!h', len(querydata))
-    sendbuf = Buflen + querydata
+
+    if not UDPMODE:
+        # length
+        Buflen = struct.pack('!h', len(querydata))
+        sendbuf = Buflen + querydata
+    else:
+        sendbuf = querydata
+
     data = None
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if not UDPMODE:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # set socket timeout
         s.settimeout(TIMEOUT)
         s.connect((server, int(port)))
@@ -143,7 +156,11 @@ def transfer(querydata, addr, server):
     if LRUCACHE is not None:
         try:
             response = LRUCACHE[key]
-            server.sendto(t_id + response[4:], addr)
+            if not UDPMODE:
+                server.sendto(t_id + response[4:], addr)
+            else:
+                server.sendto(t_id + response[2:], addr)
+
         except KeyError:
             pass
 
@@ -163,8 +180,12 @@ def transfer(querydata, addr, server):
         if LRUCACHE is not None:
             LRUCACHE[key] = response
 
-        # udp dns packet no length
-        server.sendto(response[2:], addr)
+        if not UDPMODE:
+            # udp dns packet no length
+            server.sendto(response[2:], addr)
+        else:
+            server.sendto(response, addr)
+
         break
 
     if response is None:
@@ -206,6 +227,8 @@ if __name__ == "__main__":
                       default port 53 (eg. 8.8.8.8: 53, 8.8.4.4: 53)")
     parser.add_option("-t", "--timeout", action="store",
                       dest="query_timeout", help="DNS query timeout")
+    parser.add_option("-u", "--udp", dest='udp', action='store_true',
+                      default=False, help='use udp mode, default is tcp mode')
     parser.add_option("-d", "--daemon", action="store_true", dest="daemon",
                       help="use daemon process")
     options, _ = parser.parse_args()
@@ -216,6 +239,10 @@ if __name__ == "__main__":
         DHOSTS = options.dns_servers.strip(" ,").split(',')
     if options.cache:
         LRUCACHE = lrucache(100)
+    if options.udp:
+        UDPMODE = True
+        DHOSTS = UDPHOSTS
+        DPORT = UDPPORT
 
     print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
     print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
