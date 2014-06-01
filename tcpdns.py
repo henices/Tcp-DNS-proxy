@@ -25,10 +25,11 @@
 
 try:
     from gevent import monkey
+    from gevent.server import DatagramServer
 except:
     print "*** Install gevent will save a lot of CPU time\n"
-else:
-    monkey.patch_all()
+# else:
+#    monkey.patch_all()
 
 
 import os
@@ -119,7 +120,7 @@ def QueryDNS(server, port, querydata):
         s.connect((server, int(port)))
         s.send(sendbuf)
         data = s.recv(2048)
-    except Exception, e:
+    except Exception as e:
         print '[ERROR] QueryDNS: %s' % e.message
     finally:
         if s:
@@ -211,10 +212,20 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         transfer(data, addr, socket)
 
 
-def main():
+class GeventUDPServer(DatagramServer):
+
+    def handle(self, data, address):
+        transfer(data, address, self.socket)
+
+
+def thread_main():
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
     server.serve_forever()
     server.shutdown()
+
+
+def gevent_main():
+    GeventUDPServer('127.0.0.1:53').serve_forever()
 
 
 if __name__ == "__main__":
@@ -231,7 +242,14 @@ if __name__ == "__main__":
                       default=False, help='use udp mode, default is tcp mode')
     parser.add_option("-d", "--daemon", action="store_true", dest="daemon",
                       help="use daemon process")
+    parser.add_option(
+        "-g",
+        action="store_true",
+        dest="g_server",
+        help="use gevent udp server instead of python socketserver")
     options, _ = parser.parse_args()
+
+    server = thread_main
 
     if options.query_timeout:
         TIMEOUT = float(options.query_timeout)
@@ -243,6 +261,8 @@ if __name__ == "__main__":
         UDPMODE = True
         DHOSTS = UDPHOSTS
         DPORT = UDPPORT
+    if options.g_server:
+        server = gevent_main
 
     print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
     print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
@@ -262,6 +282,6 @@ if __name__ == "__main__":
 
     try:
         with daemon.DaemonContext(detach_process=True):
-            main()
+            server()
     except:
-        main()
+        server()
