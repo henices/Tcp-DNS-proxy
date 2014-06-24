@@ -211,12 +211,13 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
+try:
+    class GeventUDPServer(DatagramServer):
 
-class GeventUDPServer(DatagramServer):
-
-    def handle(self, data, address):
-        transfer(data, address, self.socket)
-
+        def handle(self, data, address):
+            transfer(data, address, self.socket)
+except:
+    pass
 
 def thread_main():
     server = ThreadedUDPServer(('127.0.0.1', 53), ThreadedUDPRequestHandler)
