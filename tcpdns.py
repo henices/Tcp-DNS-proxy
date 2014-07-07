@@ -43,14 +43,14 @@ import third_party
 from pylru import lrucache
 
 DHOSTS = [
-    '8.8.8.8', '8.8.4.4', '156.154.70.1', '156.154.71.1',
+    '202.14.67.4', '8.8.8.8', '8.8.4.4', '156.154.70.1', '156.154.71.1',
     '208.67.222.222', '208.67.220.220', '74.207.247.4', '209.244.0.3',
     '8.26.56.26']
 DPORT = 53
 
 UDPMODE = False
 UDPHOSTS = ['208.67.222.222']
-UDPPORT = 53
+UDPPORT = 5353
 
 TIMEOUT = 20
 LRUCACHE = None
@@ -154,18 +154,13 @@ def transfer(querydata, addr, server):
     t_id = querydata[:2]
     key = querydata[2:].encode('hex')
 
-    if LRUCACHE is not None:
-        try:
-            response = LRUCACHE[key]
-            if not UDPMODE:
-                server.sendto(t_id + response[4:], addr)
-            else:
-                server.sendto(t_id + response[2:], addr)
+    if LRUCACHE and  key in LRUCACHE:
+        response = LRUCACHE[key]
+        if not UDPMODE:
+            server.sendto(t_id + response[4:], addr)
+        else:
+            server.sendto(t_id + response[2:], addr)
 
-        except KeyError:
-            pass
-
-    if response is not None:
         return
 
     for DHOST in DHOSTS:
@@ -247,6 +242,7 @@ if __name__ == "__main__":
         action="store_true",
         dest="g_server",
         help="use gevent udp server instead of python socketserver")
+
     options, _ = parser.parse_args()
 
     server = thread_main
