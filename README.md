@@ -15,7 +15,7 @@ How to use this python script ?
 3.    run the script
 
   ```bash
-  $ sudo python tcpdns.py
+  $ sudo python tcpdns.py -f tcpdns.json
   ```
   
 Dependencies
