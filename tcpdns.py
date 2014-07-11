@@ -168,6 +168,9 @@ def private_dns_response(data):
 
 def check_dns_packet(data):
 
+    if len(data) < 12:
+        return False
+
     if cfg['udp_mode']:
         Flags = data[2:4]
     else:
