@@ -17,7 +17,7 @@
  3.    运行脚本
 
   ```bash
-  $ sudo python tcpdns.py
+  $ sudo python tcpdns.py -f tcpdns.json
   ```
 
 ### Windows
@@ -26,28 +26,6 @@
  
  2.    运行tcpdns.exe
 
-
-脚本的主要参数
----------------------------
-
-```
-Usage: tcpdns.py [options]
-
-Options:
-  -h, --help            show this help message and exit
-  -c, --cached          Enable LRU cache
-  -s DNS_SERVERS, --servers=DNS_SERVERS
-                        Specifies the DNS server, separated by ','
-                        default port 53 (eg. 8.8.8.8: 53, 8.8.4.4: 53)
-  -t QUERY_TIMEOUT, --timeout=QUERY_TIMEOUT
-                        DNS query timeout
-```
-
-使用举例，
-
-```bash
-python tcpdns.py -c
-```
 
 脚本依赖
 ----------------------------
