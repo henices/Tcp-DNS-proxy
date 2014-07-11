@@ -13,6 +13,8 @@
 # 2014-01-04  add option "servers", "timeout" @jinxingxing
 # 2014-04-04  support daemon process on unix like platform
 # 2014-05-27  support udp dns server on non-standard port
+# 2014-07-08  use json config file
+# 2014-07-09  support private host
 
 #  8.8.8.8        google
 #  8.8.4.4        google
@@ -38,23 +40,17 @@ import socket
 import struct
 import threading
 import SocketServer
-import optparse
+import argparse
+import json
+import re
+from fnmatch import fnmatch
 import third_party
 from pylru import lrucache
 
-DHOSTS = [
-    '202.14.67.4', '8.8.8.8', '8.8.4.4', '156.154.70.1', '156.154.71.1',
-    '208.67.222.222', '208.67.220.220', '74.207.247.4', '209.244.0.3',
-    '8.26.56.26']
-DPORT = 53
 
-UDPMODE = False
-UDPHOSTS = ['208.67.222.222']
-UDPPORT = 5353
-
-TIMEOUT = 20
+cfg = {}
 LRUCACHE = None
-
+DNS_SERVERS = None
 
 def hexdump(src, width=16):
     """ hexdump, default width 16
@@ -102,21 +98,21 @@ def QueryDNS(server, port, querydata):
         tcp dns response data
     """
 
-    if not UDPMODE:
+    if cfg['udp_mode']:
+        sendbuf = querydata
+    else:
         # length
         Buflen = struct.pack('!h', len(querydata))
         sendbuf = Buflen + querydata
-    else:
-        sendbuf = querydata
 
     data = None
     try:
-        if not UDPMODE:
+        if not cfg['udp_mode']:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         else:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # set socket timeout
-        s.settimeout(TIMEOUT)
+        s.settimeout(cfg['socket_timeout'])
         s.connect((server, int(port)))
         s.send(sendbuf)
         data = s.recv(2048)
@@ -126,6 +122,59 @@ def QueryDNS(server, port, querydata):
         if s:
             s.close()
         return data
+
+
+def private_dns_response(data):
+    ret = None
+
+    TID = data[0:2]
+    Questions = data[4:6]
+    AnswerRRs = data[6:8]
+    AuthorityRRs = data[8:10]
+    AdditionalRRs = data[10:12]
+
+    q_domain = bytetodomain(data[12:-4])
+    qtype = struct.unpack('!h', data[-4:-2])[0]
+    print 'domain:%s, qtype:%x' % (q_domain, qtype)
+    sys.stdout.flush()
+
+    if qtype != 0x0001:
+        return None
+
+    if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
+        AuthorityRRs != '\x00\x00' or AdditionalRRs != '\x00\x00':
+            return None
+
+    items = cfg['private_host'].items()
+
+    for domain, ip in items:
+        if fnmatch(q_domain, domain):
+            ret = TID
+            ret += '\x81\x80'
+            ret += '\x00\x01'
+            ret += '\x00\x01'
+            ret += '\x00\x00'
+            ret += '\x00\x00'
+            ret += data[12:]
+            ret += '\xc0\x0c'
+            ret += '\x00\x01'
+            ret += '\x00\x01'
+            ret += '\x00\x00\xff\xff'
+            ret += '\x00\x04'
+            ret +=  socket.inet_aton(ip)
+
+    return ret
+
+
+def check_dns_packet(data):
+
+    if cfg['udp_mode']:
+        Flags = data[2:4]
+    else:
+        Flags = data[4:6]
+
+    Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
+    return Reply_code == 0
 
 
 def transfer(querydata, addr, server):
@@ -140,47 +189,42 @@ def transfer(querydata, addr, server):
         None
     """
 
-    if not querydata:
+    if len(querydata) < 12:
         return
-
-    domain = bytetodomain(querydata[12:-4])
-    qtype = struct.unpack('!h', querydata[-4:-2])[0]
-
-    print 'domain:%s, qtype:%x, thread:%d' % \
-        (domain, qtype, threading.activeCount())
-    sys.stdout.flush()
 
     response = None
     t_id = querydata[:2]
     key = querydata[2:].encode('hex')
 
+    response = private_dns_response(querydata)
+    if response:
+        server.sendto(response, addr)
+        return
+
     if LRUCACHE and  key in LRUCACHE:
         response = LRUCACHE[key]
-        if not UDPMODE:
-            server.sendto(t_id + response[4:], addr)
-        else:
+        if cfg['udp_mode']:
             server.sendto(t_id + response[2:], addr)
+        else:
+            server.sendto(t_id + response[4:], addr)
 
         return
 
-    for DHOST in DHOSTS:
-        if DHOST.find(':') >= 0:
-            ip, port = DHOST.split(':')
-        else:
-            ip, port = DHOST, DPORT
+    for item in DNS_SERVERS:
+        ip, port = item.split(':')
 
         response = QueryDNS(ip, port, querydata)
         if response is None:
             continue
 
-        if LRUCACHE is not None:
+        if LRUCACHE is not None and check_dns_packet(response):
             LRUCACHE[key] = response
 
-        if not UDPMODE:
+        if cfg['udp_mode']:
+            server.sendto(response, addr)
+        else:
             # udp dns packet no length
             server.sendto(response[2:], addr)
-        else:
-            server.sendto(response, addr)
 
         break
 
@@ -225,48 +269,33 @@ def gevent_main():
 
 if __name__ == "__main__":
 
-    parser = optparse.OptionParser()
-    parser.add_option("-c", "--cached", action="store_true",
-                      dest="cache", default=False, help="Enable LRU cache")
-    parser.add_option("-s", "--servers", action="store", dest="dns_servers",
-                      help="Specifies the DNS server, separated by ',' \
-                      default port 53 (eg. 8.8.8.8: 53, 8.8.4.4: 53)")
-    parser.add_option("-t", "--timeout", action="store",
-                      dest="query_timeout", help="DNS query timeout")
-    parser.add_option("-u", "--udp", dest='udp', action='store_true',
-                      default=False, help='use udp mode, default is tcp mode')
-    parser.add_option("-d", "--daemon", action="store_true", dest="daemon",
-                      help="use daemon process")
-    parser.add_option(
-        "-g",
-        action="store_true",
-        dest="g_server",
-        help="use gevent udp server instead of python socketserver")
+    parser = argparse.ArgumentParser(description='TCP DNS Proxy')
+    parser.add_argument('-f', dest='config_json', type=argparse.FileType('r'),
+            required=True, help='Json config file')
+    args = parser.parse_args()
 
-    options, _ = parser.parse_args()
+    cfg = json.load(args.config_json)
 
     server = thread_main
 
-    if options.query_timeout:
-        TIMEOUT = float(options.query_timeout)
-    if options.dns_servers:
-        DHOSTS = options.dns_servers.strip(" ,").split(',')
-    if options.cache:
-        LRUCACHE = lrucache(100)
-    if options.udp:
-        UDPMODE = True
-        DHOSTS = UDPHOSTS
-        DPORT = UDPPORT
-    if options.g_server:
+    if cfg['use_gevent']:
         server = gevent_main
 
+    if cfg['udp_mode']:
+        DNS_SERVERS = cfg['udp_dns_server']
+    else:
+        DNS_SERVERS = cfg['tcp_dns_server']
+
+    if cfg['enable_lru_cache']:
+        LRUCACHE = lrucache(cfg['lru_cache_size'])
+
     print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
-    print '>> DNS Servers:\n%s' % ('\n'.join(DHOSTS))
-    print '>> Query Timeout: %f' % (TIMEOUT)
-    print '>> Enable Cache: %r' % (options.cache)
+    print '>> DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS))
+    print '>> Query Timeout: %f' % (cfg['socket_timeout'])
+    print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
     print '>> Now you can set dns server to 127.0.0.1'
 
-    if options.daemon:
+    if cfg['daemon_process']:
         if os.name == 'nt':
             raise Exception("Windows doesn't support daemon process")
         else:
