@@ -214,10 +214,10 @@ def transfer(querydata, addr, server):
         ip, port = item.split(':')
 
         response = QueryDNS(ip, port, querydata)
-        if response is None:
+        if response is None or not check_dns_packet(response):
             continue
 
-        if LRUCACHE is not None and check_dns_packet(response):
+        if LRUCACHE is not None:
             LRUCACHE[key] = response
 
         if cfg['udp_mode']:
