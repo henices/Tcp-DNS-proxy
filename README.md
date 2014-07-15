@@ -1,3 +1,4 @@
+
 How to use this python script ?
 -------------------------------
 
@@ -37,6 +38,10 @@ INSTALL
   sudo pip install gevent
   sudo pip install python-daemon
 ```
+
+
+![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
+
 
 LICENSE
 ----------------------
