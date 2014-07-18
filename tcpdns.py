@@ -138,32 +138,33 @@ def private_dns_response(data):
     print 'domain:%s, qtype:%x' % (q_domain, qtype)
     sys.stdout.flush()
 
-    if qtype != 0x0001:
-        return None
+    try:
+        if qtype != 0x0001:
+            return
 
-    if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
-        AuthorityRRs != '\x00\x00' or AdditionalRRs != '\x00\x00':
-            return None
+        if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
+            AuthorityRRs != '\x00\x00' or AdditionalRRs != '\x00\x00':
+                return
 
-    items = cfg['private_host'].items()
+        items = cfg['private_host'].items()
 
-    for domain, ip in items:
-        if fnmatch(q_domain, domain):
-            ret = TID
-            ret += '\x81\x80'
-            ret += '\x00\x01'
-            ret += '\x00\x01'
-            ret += '\x00\x00'
-            ret += '\x00\x00'
-            ret += data[12:]
-            ret += '\xc0\x0c'
-            ret += '\x00\x01'
-            ret += '\x00\x01'
-            ret += '\x00\x00\xff\xff'
-            ret += '\x00\x04'
-            ret +=  socket.inet_aton(ip)
-
-    return ret
+        for domain, ip in items:
+            if fnmatch(q_domain, domain):
+                ret = TID
+                ret += '\x81\x80'
+                ret += '\x00\x01'
+                ret += '\x00\x01'
+                ret += '\x00\x00'
+                ret += '\x00\x00'
+                ret += data[12:]
+                ret += '\xc0\x0c'
+                ret += '\x00\x01'
+                ret += '\x00\x01'
+                ret += '\x00\x00\xff\xff'
+                ret += '\x00\x04'
+                ret +=  socket.inet_aton(ip)
+    finally:
+        return (q_domain, ret)
 
 
 def check_dns_packet(data):
@@ -199,7 +200,7 @@ def transfer(querydata, addr, server):
     t_id = querydata[:2]
     key = querydata[2:].encode('hex')
 
-    response = private_dns_response(querydata)
+    q_domain, response = private_dns_response(querydata)
     if response:
         server.sendto(response, addr)
         return
@@ -232,7 +233,7 @@ def transfer(querydata, addr, server):
         break
 
     if response is None:
-        print "[ERROR] Tried many times and failed to resolve %s" % domain
+        print "[ERROR] Tried many times and failed to resolve %s" % q_domain
 
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
