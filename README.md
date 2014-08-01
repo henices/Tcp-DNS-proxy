@@ -1,4 +1,6 @@
 
+![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
+
 How to use this python script ?
 -------------------------------
 
@@ -124,9 +126,6 @@ Use tcpdns.exe in win directory.
    ```
    C:\Python27\Scripts\pip.exe install gevent
    ```
-
-
-![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
 
 
 LICENSE
