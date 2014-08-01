@@ -19,6 +19,35 @@ How to use this python script ?
   $ sudo python tcpdns.py -f tcpdns.json
   ```
   
+  
+Configuration file
+----------------------------
+
+``` json
+{
+    "socket_timeout": 20,
+    "tcp_dns_server": ["8.8.8.8:53",
+                       "8.8.4.4:53",
+                       "156.154.70.1:53",
+                       "156.154.71.1:53",
+                       "208.67.222.222:53",
+                       "208.67.220.220:53",
+                       "74.207.247.4:53",
+                       "209.244.0.3:53",
+                       "8.26.56.26:53"],
+    "udp_dns_server": ["208.67.222.222:5353"],
+    "enable_lru_cache": true,
+    "lru_cache_size"  : 100,
+    "use_gevent"      : false,
+    "udp_mode"        : false,
+    "daemon_process"  : false,
+    "private_host"     : {"*google.com": "203.117.34.162"}
+}
+
+
+```
+
+  
 Dependencies
 ----------------------------
 
@@ -74,8 +103,15 @@ Use tcpdns.exe in win directory.
    
    In order to build gevent library you should install Visual Studio, 
    although tcpdns.py can run perfectly without python gevent.
+   
+   
+1. Pull the submodule source code.
+   ```bash
+     cd Tcp-DNS-proxy
+     git submodule update --init --recursive
+   ```
 
-1. Install pip.exe
+2. Install pip.exe
 
    Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
    execute the following commands:
@@ -83,7 +119,7 @@ Use tcpdns.exe in win directory.
    ```
    python get-pip.py
    ```
-2. Install python gevent
+3. Install python gevent
    
    ```
    C:\Python27\Scripts\pip.exe install gevent
