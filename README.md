@@ -35,7 +35,7 @@ INSTALL
 
 ### Super-quick installation
 
-#### Linux system
++ Linux system
 
 ```bash
 
@@ -43,7 +43,7 @@ INSTALL
   ./install.sh
 ```
 
-#### Windows system
++ Windows system
 
 Use tcpdns.exe in win directory.
 
@@ -53,32 +53,42 @@ Use tcpdns.exe in win directory.
 
 #### Ubuntu or Debian installation guide
 
-```bash
+1. Use the following commands to install python modules
 
-  sudo apt-get install libevent-dev
-  sudo apt-get install python-pip
-  sudo pip install gevent
-  sudo pip install python-daemon
-```
+   ```bash
+   
+     sudo apt-get install libevent-dev
+     sudo apt-get install python-pip
+     sudo pip install gevent
+     sudo pip install python-daemon
+   ```
 
-Don't forget to pull the submodule source code.
+2. Pull the submodule source code.
 
-```bash
-  cd Tcp-DNS-proxy
-  git submodule update --init --recursive
-```
+   ```bash
+     cd Tcp-DNS-proxy
+     git submodule update --init --recursive
+   ```
 
 #### Windows installation guide
 
-It's harder to install on Windows system, in order to build gevent library you should install Visual Studio, Through tcpdns.py can run without python gevent.
+It's harder to install on Windows system.
 
-Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
-execute the following commands:
+in order to build gevent library you should install Visual Studio, although tcpdns.py can run perfectly without python gevent.
 
-```
-python get-pip.py
-C:\Python27\Scripts\pip.exe install gevent
-```
+1. Install pip.exe
+
+   Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
+   execute the following commands:
+   
+   ```
+   python get-pip.py
+   ```
+2. Install python gevent
+   
+   ```
+   C:\Python27\Scripts\pip.exe install gevent
+   ```
 
 
 ![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
