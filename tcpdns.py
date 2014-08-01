@@ -27,11 +27,10 @@
 
 try:
     from gevent import monkey
-    from gevent.server import DatagramServer
 except:
-    print "*** Install gevent will save a lot of CPU time\n"
-# else:
-#    monkey.patch_all()
+    print "[I] Install python gevent will save a lot of CPU time"
+else:
+    monkey.patch_all()
 
 
 import os
@@ -254,11 +253,15 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
+try:
+    from gevent.server import DatagramServer
 
-class GeventUDPServer(DatagramServer):
+    class GeventUDPServer(DatagramServer):
 
-    def handle(self, data, address):
-        transfer(data, address, self.socket)
+        def handle(self, data, address):
+            transfer(data, address, self.socket)
+except:
+    print "[I] Install python gevent can use gevent udp server\n"
 
 
 def thread_main():
@@ -268,7 +271,10 @@ def thread_main():
 
 
 def gevent_main():
-    GeventUDPServer('127.0.0.1:53').serve_forever()
+    try:
+        GeventUDPServer('127.0.0.1:53').serve_forever()
+    except NameError:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
