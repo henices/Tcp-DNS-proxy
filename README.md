@@ -33,10 +33,51 @@ Dependencies
 INSTALL
 ---------------------
 
-``` bash
+### Super-quick installation
+
+#### Linux 
+
+```bash
+
+  chmod +x ./install.sh
+  ./install.sh
+```
+
+#### Windows
+
+Use tcpdns.exe in win directory.
+
+
+### Manual Installation
+
+
+#### Ubuntu or Debian
+
+```bash
+
   sudo apt-get install libevent-dev
+  sudo apt-get install python-pip
   sudo pip install gevent
   sudo pip install python-daemon
+```
+
+Don't forget to pull the submodule source code.
+
+```bash
+  cd Tcp-DNS-proxy
+  git submodule update --init --recursive
+```
+
+#### Windows
+
+To build gevent library you should install Visual Studio first.
+
+Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
+execute the following commands:
+
+```
+python get-pip.py
+C:\Python27\Scripts\pip.exe install gevent
 ```
 
 
