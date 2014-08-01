@@ -35,7 +35,7 @@ INSTALL
 
 ### Super-quick installation
 
-#### Linux 
+#### Linux system
 
 ```bash
 
@@ -43,7 +43,7 @@ INSTALL
   ./install.sh
 ```
 
-#### Windows
+#### Windows system
 
 Use tcpdns.exe in win directory.
 
@@ -51,7 +51,7 @@ Use tcpdns.exe in win directory.
 ### Manual Installation
 
 
-#### Ubuntu or Debian
+#### Ubuntu or Debian installation guide
 
 ```bash
 
@@ -68,9 +68,9 @@ Don't forget to pull the submodule source code.
   git submodule update --init --recursive
 ```
 
-#### Windows
+#### Windows installation guide
 
-To build gevent library you should install Visual Studio first.
+It's harder to install on Windows system, in order to build gevent library you should install Visual Studio, Through tcpdns.py can run without python gevent.
 
 Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
 execute the following commands:
