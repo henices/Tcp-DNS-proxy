@@ -133,8 +133,8 @@ def private_dns_response(data):
     AdditionalRRs = data[10:12]
 
     q_domain = bytetodomain(data[12:-4])
-    qtype = struct.unpack('!h', data[-4:-2])[0]
-    print 'domain:%s, qtype:%x' % (q_domain, qtype)
+    q_type = struct.unpack('!h', data[-4:-2])[0]
+    print 'domain:%s, qtype:%x' % (q_domain, q_type)
     sys.stdout.flush()
 
     try:
@@ -163,10 +163,10 @@ def private_dns_response(data):
                 ret += '\x00\x04'
                 ret +=  socket.inet_aton(ip)
     finally:
-        return (q_domain, ret)
+        return (q_type, q_domain, ret)
 
 
-def check_dns_packet(data):
+def check_dns_packet(data, q_type):
 
     if len(data) < 12:
         return False
@@ -175,6 +175,18 @@ def check_dns_packet(data):
         Flags = data[2:4]
     else:
         Flags = data[4:6]
+
+    if q_type == 0x0001:
+
+        ip_len = data[-6:-4]
+        answer_class = data[-12:-10]
+        answer_type = data[-14:-12]
+
+        test = (ip_len == '\x00\x04' and answer_class == '\x00\x01' and \
+                answer_type == '\x00\x01')
+
+        if not test:
+            return False
 
     Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
     return Reply_code == 0
@@ -199,7 +211,7 @@ def transfer(querydata, addr, server):
     t_id = querydata[:2]
     key = querydata[2:].encode('hex')
 
-    q_domain, response = private_dns_response(querydata)
+    q_type, q_domain, response = private_dns_response(querydata)
     if response:
         server.sendto(response, addr)
         return
@@ -217,7 +229,7 @@ def transfer(querydata, addr, server):
         ip, port = item.split(':')
 
         response = QueryDNS(ip, port, querydata)
-        if response is None or not check_dns_packet(response):
+        if response is None or not check_dns_packet(response, q_type):
             continue
 
         if LRUCACHE is not None:
