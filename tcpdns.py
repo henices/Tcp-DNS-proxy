@@ -26,12 +26,12 @@
 #  198.153.194.1  Norton
 
 try:
-    from gevent import monkey
+    import gevent
+    import gevent.monkey
 except:
     print "[I] Install python gevent will save a lot of CPU time"
 else:
-    monkey.patch_all()
-
+    gevent.monkey.patch_all()
 
 import os
 import sys
@@ -41,7 +41,9 @@ import threading
 import SocketServer
 import argparse
 import json
+import time
 import re
+import traceback
 from fnmatch import fnmatch
 import third_party
 from pylru import lrucache
@@ -50,6 +52,7 @@ from pylru import lrucache
 cfg = {}
 LRUCACHE = None
 DNS_SERVERS = None
+SPEED = {}
 
 def hexdump(src, width=16):
     """ hexdump, default width 16
@@ -84,6 +87,47 @@ def bytetodomain(s):
 
     return domain
 
+def dnsping(ip, port):
+    buff =  "\x00\x1d\xb2\x5f\x01\x00\x00\x01"
+    buff += "\x00\x00\x00\x00\x00\x00\x07\x74"
+    buff += "\x77\x69\x74\x74\x65\x72\x03\x63"
+    buff += "\x6f\x6d\x00\x00\x01\x00\x01"
+
+    cost = 100
+    begin = time.time()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(cfg['socket_timeout'])
+        s.connect((ip, int(port)))
+        s.send(buff)
+        s.recv(2048)
+    except:
+        print 'dnsping %s %s error occur :(' % (ip, port)
+    else:
+        cost = time.time() - begin
+
+    key = '%s:%d' % (ip, int(port))
+    if key not in SPEED:
+        SPEED[key] = []
+
+    SPEED[key].append(cost)
+
+def TestSpeed():
+    global DNS_SERVERS
+    jobs = []
+    for i in xrange(0, 6):
+        for s in DNS_SERVERS:
+            ip, port = s.split(':')
+            jobs.append(gevent.spawn(dnsping, ip, port))
+
+    gevent.joinall(jobs)
+
+    cost = {}
+    for k, v in SPEED.items():
+        cost[k] = sum(v)
+
+    d = sorted(cost, key=cost.get)
+    DNS_SERVERS = d[:3]
 
 def QueryDNS(server, port, querydata):
     """tcp dns request
@@ -317,6 +361,12 @@ if __name__ == "__main__":
     print '>> DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS))
     print '>> Query Timeout: %f' % (cfg['socket_timeout'])
     print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
+
+    print '>> Testing dns server speed, wait ...'
+    TestSpeed()
+
+    print '>> Select the fastest 3 dns servers'
+
     if cfg["host"] == "0.0.0.0":
         print '>> Now you can set dns server to localhost'
     else:
