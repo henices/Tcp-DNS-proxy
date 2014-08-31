@@ -182,7 +182,7 @@ def private_dns_response(data):
     sys.stdout.flush()
 
     try:
-        if qtype != 0x0001:
+        if q_type != 0x0001:
             return
 
         if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
