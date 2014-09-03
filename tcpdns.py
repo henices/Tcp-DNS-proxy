@@ -27,11 +27,8 @@
 
 try:
     import gevent
-    import gevent.monkey
 except:
     print "[I] Install python gevent will save a lot of CPU time"
-else:
-    gevent.monkey.patch_all()
 
 import os
 import sys
