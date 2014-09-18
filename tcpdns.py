@@ -55,7 +55,7 @@ def hexdump(src, width=16):
     """ hexdump, default width 16
     """
     FILTER = ''.join(
-        [(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)])
+        [(x < 0x7f and x > 0x1f) and chr(x) or '.' for x in range(256)])
     result = []
     for i in xrange(0, len(src), width):
         s = src[i:i + width]
