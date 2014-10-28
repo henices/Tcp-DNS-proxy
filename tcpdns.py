@@ -361,10 +361,10 @@ if __name__ == "__main__":
     print '>> Query Timeout: %f' % (cfg['socket_timeout'])
     print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
 
-    print '>> Testing dns server speed, wait ...'
-    TestSpeed()
-
-    print '>> Select the fastest 3 dns servers'
+    if cfg['speed_test']:
+        print '>> Testing dns server speed, wait ...'
+        TestSpeed()
+        print '>> Select the fastest 3 dns servers'
 
     if cfg["host"] == "0.0.0.0":
         print '>> Now you can set dns server to localhost'
