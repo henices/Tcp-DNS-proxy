@@ -28,16 +28,17 @@ Configuration file
 ``` json
 {
     "socket_timeout": 20,
+    "host": "0.0.0.0",
+    "port": 53,
     "tcp_dns_server": ["8.8.8.8:53",
                        "8.8.4.4:53",
                        "156.154.70.1:53",
                        "156.154.71.1:53",
                        "208.67.222.222:53",
                        "208.67.220.220:53",
-                       "74.207.247.4:53",
-                       "209.244.0.3:53",
-                       "8.26.56.26:53"],
+                       "209.244.0.3:53"],
     "udp_dns_server": ["208.67.222.222:5353"],
+    "speed_test": true,
     "enable_lru_cache": true,
     "lru_cache_size"  : 100,
     "use_gevent"      : false,
@@ -45,6 +46,7 @@ Configuration file
     "daemon_process"  : false,
     "private_host"     : {"*google.com": "203.117.34.162"}
 }
+
 
 
 ```
