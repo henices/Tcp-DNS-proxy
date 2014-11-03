@@ -1,2 +1,4 @@
 *.swp
 *.pyc
+*.log
+tcpdns.json

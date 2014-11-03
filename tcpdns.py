@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # cody by zhouzhenster@gmail.com
 
@@ -318,14 +318,14 @@ except:
 
 
 def thread_main(cfg):
-    server = ThreadedUDPServer((cfg["host"], 53), ThreadedUDPRequestHandler)
+    server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
     server.shutdown()
 
 
 def gevent_main(cfg):
     try:
-        GeventUDPServer('%s:53' % cfg["host"]).serve_forever()
+        GeventUDPServer('%s:%s' % (cfg["host"], cfg["port"])).serve_forever()
     except NameError:
         sys.exit(1)
 
@@ -340,6 +340,8 @@ if __name__ == "__main__":
     cfg = json.load(args.config_json)
     if not cfg.has_key("host"):
         cfg["host"] = "0.0.0.0"
+    if not cfg.has_key("port"):
+        cfg["port"] = 53
 
     server = thread_main
 
@@ -359,15 +361,15 @@ if __name__ == "__main__":
     print '>> Query Timeout: %f' % (cfg['socket_timeout'])
     print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
 
-    print '>> Testing dns server speed, wait ...'
-    TestSpeed()
-
-    print '>> Select the fastest 3 dns servers'
+    if cfg['speed_test']:
+        print '>> Testing dns server speed, wait ...'
+        TestSpeed()
+        print '>> Select the fastest 3 dns servers'
 
     if cfg["host"] == "0.0.0.0":
         print '>> Now you can set dns server to localhost'
     else:
-        print '>> Now you can set dns server to %s' % cfg["host"]
+        print '>> Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"])
 
     if cfg['daemon_process']:
         if os.name == 'nt':
