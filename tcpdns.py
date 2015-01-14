@@ -15,6 +15,7 @@
 # 2014-05-27  support udp dns server on non-standard port
 # 2014-07-08  use json config file
 # 2014-07-09  support private host
+# 2015-01-14  support dns server auto switch
 
 #  8.8.8.8        google
 #  8.8.4.4        google
@@ -25,31 +26,25 @@
 #  198.153.192.1  Norton
 #  198.153.194.1  Norton
 
-try:
-    import gevent
-except:
-    print "[I] Install python gevent will save a lot of CPU time"
-
+import gevent
 import os
 import sys
 import socket
 import struct
-import threading
 import SocketServer
 import argparse
 import json
 import time
-import re
-import traceback
 from fnmatch import fnmatch
+from gevent.server import DatagramServer
 import third_party
 from pylru import lrucache
-
 
 cfg = {}
 LRUCACHE = None
 DNS_SERVERS = None
 SPEED = {}
+ERR_COUNTER = 0
 
 def hexdump(src, width=16):
     """ hexdump, default width 16
@@ -138,6 +133,11 @@ def QueryDNS(server, port, querydata):
         tcp dns response data
     """
 
+    global ERR_COUNTER
+
+    if ERR_COUNTER > 10:
+        TestSpeed()
+
     if cfg['udp_mode']:
         sendbuf = querydata
     else:
@@ -157,6 +157,7 @@ def QueryDNS(server, port, querydata):
         s.send(sendbuf)
         data = s.recv(2048)
     except Exception as e:
+        ERR_COUNTER += 1
         print '[ERROR] QueryDNS: %s' % e.message
     finally:
         if s:
@@ -306,15 +307,11 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
-try:
-    from gevent.server import DatagramServer
 
-    class GeventUDPServer(DatagramServer):
+class GeventUDPServer(DatagramServer):
 
-        def handle(self, data, address):
-            transfer(data, address, self.socket)
-except:
-    print "[I] Install python gevent can use gevent udp server\n"
+    def handle(self, data, address):
+        transfer(data, address, self.socket)
 
 
 def thread_main(cfg):
@@ -324,10 +321,7 @@ def thread_main(cfg):
 
 
 def gevent_main(cfg):
-    try:
-        GeventUDPServer('%s:%s' % (cfg["host"], cfg["port"])).serve_forever()
-    except NameError:
-        sys.exit(1)
+    GeventUDPServer('%s:%s' % (cfg["host"], cfg["port"])).serve_forever()
 
 
 if __name__ == "__main__":
@@ -360,6 +354,7 @@ if __name__ == "__main__":
     print '>> DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS))
     print '>> Query Timeout: %f' % (cfg['socket_timeout'])
     print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
+    print '>> Enable Switch: %r' % (cfg['enable_server_switch'])
 
     if cfg['speed_test']:
         print '>> Testing dns server speed, wait ...'

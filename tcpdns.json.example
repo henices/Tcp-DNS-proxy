@@ -16,5 +16,6 @@
     "use_gevent"      : false,
     "udp_mode"        : false,
     "daemon_process"  : false,
+    "enable_server_switch"      : true,
     "private_host"     : {"*google.com": "203.117.34.162"}
 }
