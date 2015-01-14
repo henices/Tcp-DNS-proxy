@@ -13,7 +13,6 @@
     "speed_test": true,
     "enable_lru_cache": true,
     "lru_cache_size"  : 100,
-    "use_gevent"      : false,
     "udp_mode"        : false,
     "daemon_process"  : false,
     "enable_server_switch"      : true,

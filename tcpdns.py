@@ -28,7 +28,6 @@
 
 import gevent
 import os
-import sys
 import socket
 import struct
 import SocketServer
@@ -36,7 +35,7 @@ import argparse
 import json
 import time
 from fnmatch import fnmatch
-from gevent.server import DatagramServer
+import logging
 import third_party
 from pylru import lrucache
 
@@ -44,7 +43,13 @@ cfg = {}
 LRUCACHE = None
 DNS_SERVERS = None
 SPEED = {}
-ERR_COUNTER = 0
+DATA = {'err_counter': 0, 'speed_test': False}
+
+def cfg_logging():
+    """ logging format
+    """
+    logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s',
+                        level=logging.DEBUG)
 
 def hexdump(src, width=16):
     """ hexdump, default width 16
@@ -94,7 +99,7 @@ def dnsping(ip, port):
         s.send(buff)
         s.recv(2048)
     except:
-        print 'dnsping %s %s error occur :(' % (ip, port)
+        logging.error('dnsping %s %s' % (ip, port))
     else:
         cost = time.time() - begin
 
@@ -106,9 +111,19 @@ def dnsping(ip, port):
 
 def TestSpeed():
     global DNS_SERVERS
+    global DATA
+
+    DATA['speed_test'] = True
+
+    if cfg['udp_mode']:
+        servers = cfg['udp_dns_server']
+    else:
+        servers = cfg['tcp_dns_server']
+
+    logging.info('Testing dns server speed ...')
     jobs = []
     for i in xrange(0, 6):
-        for s in DNS_SERVERS:
+        for s in servers:
             ip, port = s.split(':')
             jobs.append(gevent.spawn(dnsping, ip, port))
 
@@ -120,6 +135,9 @@ def TestSpeed():
 
     d = sorted(cost, key=cost.get)
     DNS_SERVERS = d[:3]
+
+    DATA['err_counter'] = 0
+    DATA['speed_test'] = False
 
 def QueryDNS(server, port, querydata):
     """tcp dns request
@@ -133,9 +151,9 @@ def QueryDNS(server, port, querydata):
         tcp dns response data
     """
 
-    global ERR_COUNTER
+    global data
 
-    if ERR_COUNTER > 10:
+    if DATA['err_counter'] >= 0 and not DATA['speed_test']:
         TestSpeed()
 
     if cfg['udp_mode']:
@@ -157,8 +175,8 @@ def QueryDNS(server, port, querydata):
         s.send(sendbuf)
         data = s.recv(2048)
     except Exception as e:
-        ERR_COUNTER += 1
-        print '[ERROR] QueryDNS: %s' % e.message
+        DATA['err_counter'] += 1
+        logging.error('Server %s: %s' % (server, str(e)))
     finally:
         if s:
             s.close()
@@ -176,8 +194,8 @@ def private_dns_response(data):
 
     q_domain = bytetodomain(data[12:-4])
     q_type = struct.unpack('!h', data[-4:-2])[0]
-    print 'domain:%s, qtype:%x' % (q_domain, q_type)
-    sys.stdout.flush()
+
+    logging.info('domain:%s, qtype:%x' % (q_domain, q_type))
 
     try:
         if q_type != 0x0001:
@@ -286,7 +304,7 @@ def transfer(querydata, addr, server):
         break
 
     if response is None:
-        print "[ERROR] Tried many times and failed to resolve %s" % q_domain
+        logging.error('Tried many times and failed to resolve %s' % q_domain)
 
 
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
@@ -307,22 +325,10 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
-
-class GeventUDPServer(DatagramServer):
-
-    def handle(self, data, address):
-        transfer(data, address, self.socket)
-
-
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
     server.shutdown()
-
-
-def gevent_main(cfg):
-    GeventUDPServer('%s:%s' % (cfg["host"], cfg["port"])).serve_forever()
-
 
 if __name__ == "__main__":
 
@@ -331,16 +337,17 @@ if __name__ == "__main__":
             required=True, help='Json config file')
     args = parser.parse_args()
 
+    cfg_logging()
+
     cfg = json.load(args.config_json)
+
     if not cfg.has_key("host"):
         cfg["host"] = "0.0.0.0"
+
     if not cfg.has_key("port"):
         cfg["port"] = 53
 
     server = thread_main
-
-    if cfg['use_gevent']:
-        server = gevent_main
 
     if cfg['udp_mode']:
         DNS_SERVERS = cfg['udp_dns_server']
@@ -350,21 +357,17 @@ if __name__ == "__main__":
     if cfg['enable_lru_cache']:
         LRUCACHE = lrucache(cfg['lru_cache_size'])
 
-    print '>> TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy'
-    print '>> DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS))
-    print '>> Query Timeout: %f' % (cfg['socket_timeout'])
-    print '>> Enable Cache: %r' % (cfg['enable_lru_cache'])
-    print '>> Enable Switch: %r' % (cfg['enable_server_switch'])
+    logging.info('TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy')
+    logging.info('DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS)))
+    logging.info('Query Timeout: %f' % (cfg['socket_timeout']))
+    logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
+    logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
 
     if cfg['speed_test']:
-        print '>> Testing dns server speed, wait ...'
         TestSpeed()
-        print '>> Select the fastest 3 dns servers'
 
-    if cfg["host"] == "0.0.0.0":
-        print '>> Now you can set dns server to localhost'
-    else:
-        print '>> Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"])
+    logging.info(
+            'Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"]))
 
     if cfg['daemon_process']:
         if os.name == 'nt':
@@ -372,9 +375,9 @@ if __name__ == "__main__":
         else:
             try:
                 import daemon
-                print '>>> Run code in daemon process'
+                logging.info('Run code in daemon process')
             except ImportError:
-                print '*** Please install python-daemon'
+                logging.error('Please install python-daemon')
 
     try:
         with daemon.DaemonContext(detach_process=True):
