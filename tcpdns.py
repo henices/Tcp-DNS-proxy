@@ -151,7 +151,7 @@ def QueryDNS(server, port, querydata):
         tcp dns response data
     """
 
-    global data
+    global DATA
 
     if DATA['err_counter'] >= 10 and not DATA['speed_test']:
         TestSpeed()
