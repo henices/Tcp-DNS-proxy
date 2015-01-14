@@ -98,8 +98,8 @@ def dnsping(ip, port):
         s.connect((ip, int(port)))
         s.send(buff)
         s.recv(2048)
-    except:
-        logging.error('dnsping %s %s' % (ip, port))
+    except Exception as e:
+        logging.error('%s:%s, %s' % (ip, port, str(e)))
     else:
         cost = time.time() - begin
 
