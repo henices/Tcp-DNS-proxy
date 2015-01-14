@@ -153,7 +153,7 @@ def QueryDNS(server, port, querydata):
 
     global data
 
-    if DATA['err_counter'] >= 0 and not DATA['speed_test']:
+    if DATA['err_counter'] >= 10 and not DATA['speed_test']:
         TestSpeed()
 
     if cfg['udp_mode']:
