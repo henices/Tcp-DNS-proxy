@@ -38,13 +38,13 @@ Configuration file
                        "208.67.220.220:53",
                        "209.244.0.3:53"],
     "udp_dns_server": ["208.67.222.222:5353"],
+    "enable_server_switch": true,
     "speed_test": true,
     "enable_lru_cache": true,
     "lru_cache_size"  : 100,
-    "use_gevent"      : false,
     "udp_mode"        : false,
     "daemon_process"  : false,
-    "private_host"     : {"*google.com": "203.117.34.162"}
+    "private_host"    : {"*google.com": "203.117.34.162"}
 }
 
 
