@@ -45,11 +45,11 @@ DNS_SERVERS = None
 SPEED = {}
 DATA = {'err_counter': 0, 'speed_test': False}
 
-def cfg_logging():
+def cfg_logging(dbg_level):
     """ logging format
     """
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s',
-                        level=logging.DEBUG)
+                        level=dbg_level)
 
 def hexdump(src, width=16):
     """ hexdump, default width 16
@@ -195,7 +195,7 @@ def private_dns_response(data):
     q_domain = bytetodomain(data[12:-4])
     q_type = struct.unpack('!h', data[-4:-2])[0]
 
-    logging.info('domain:%s, qtype:%x' % (q_domain, q_type))
+    logging.debug('domain:%s, qtype:%x' % (q_domain, q_type))
 
     try:
         if q_type != 0x0001:
@@ -335,9 +335,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='TCP DNS Proxy')
     parser.add_argument('-f', dest='config_json', type=argparse.FileType('r'),
             required=True, help='Json config file')
+    parser.add_argument('-d', dest='dbg_level', action='store_true',
+            required=False, default=False, help='Print debug message')
     args = parser.parse_args()
 
-    cfg_logging()
+    if args.dbg_level:
+        cfg_logging(logging.DEBUG)
+    else:
+        cfg_logging(logging.INFO)
 
     cfg = json.load(args.config_json)
 
@@ -358,7 +363,7 @@ if __name__ == "__main__":
         LRUCACHE = lrucache(cfg['lru_cache_size'])
 
     logging.info('TCP DNS Proxy, https://github.com/henices/Tcp-DNS-proxy')
-    logging.info('DNS Servers:\n%s' % ('\n'.join(DNS_SERVERS)))
+    logging.info('DNS Servers:\n%s' % DNS_SERVERS)
     logging.info('Query Timeout: %f' % (cfg['socket_timeout']))
     logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
     logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
