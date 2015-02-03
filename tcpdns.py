@@ -238,14 +238,23 @@ def check_dns_packet(data, q_type):
 
     if q_type == 0x0001:
 
-        ip_len = data[-6:-4]
-        answer_class = data[-12:-10]
-        answer_type = data[-14:-12]
+        ipv4_len = data[-6:-4]
+        ipv4_answer_class = data[-12:-10]
+        ipv4_answer_type = data[-14:-12]
 
-        test = (ip_len == '\x00\x04' and answer_class == '\x00\x01' and \
-                answer_type == '\x00\x01')
+        test_ipv4 = (ipv4_len == '\x00\x04' and \
+                     ipv4_answer_class == '\x00\x01' and \
+                     ipv4_answer_type == '\x00\x01')
 
-        if not test:
+        ipv6_len = data[-18:-16]
+        ipv6_answer_class = data[-24:-22]
+        ipv6_answer_type =data[-26:-24]
+
+        test_ipv6 = (ipv6_len == '\x00\x10' and \
+                     ipv6_answer_class == '\x00\x01' and \
+                     ipv6_answer_type == '\x00\x1c')
+
+        if not (test_ipv4 or test_ipv6):
             return False
 
     Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
