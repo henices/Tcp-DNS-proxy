@@ -228,6 +228,9 @@ def private_dns_response(data):
 
 def check_dns_packet(data, q_type):
 
+    test_ipv4 = False
+    test_ipv6 = False
+
     if len(data) < 12:
         return False
 
@@ -246,13 +249,15 @@ def check_dns_packet(data, q_type):
                      ipv4_answer_class == '\x00\x01' and \
                      ipv4_answer_type == '\x00\x01')
 
-        ipv6_len = data[-18:-16]
-        ipv6_answer_class = data[-24:-22]
-        ipv6_answer_type =data[-26:-24]
+        if not test_ipv4:
 
-        test_ipv6 = (ipv6_len == '\x00\x10' and \
-                     ipv6_answer_class == '\x00\x01' and \
-                     ipv6_answer_type == '\x00\x1c')
+            ipv6_len = data[-18:-16]
+            ipv6_answer_class = data[-24:-22]
+            ipv6_answer_type =data[-26:-24]
+
+            test_ipv6 = (ipv6_len == '\x00\x10' and \
+                         ipv6_answer_class == '\x00\x01' and \
+                         ipv6_answer_type == '\x00\x1c')
 
         if not (test_ipv4 or test_ipv6):
             return False
