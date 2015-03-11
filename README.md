@@ -21,6 +21,20 @@ How to use this python script ?
   $ sudo python tcpdns.py -f tcpdns.json
   ```
   
+Commandline
+----------------------------
+
+```
+usage: tcpdns.py [-h] -f CONFIG_JSON [-d]
+
+TCP DNS Proxy
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -f CONFIG_JSON  Json config file
+  -d              Print debug message
+```
+
   
 Configuration file
 ----------------------------
