@@ -104,30 +104,49 @@ Use tcpdns.exe in win directory.
    ```
 
 #### Windows installation guide
-   
+
    In order to build gevent library you should install Visual Studio, 
    although tcpdns.py can run perfectly without python gevent.
-   
-   
+
+
 1. Pull the submodule source code.
    ```bash
      cd Tcp-DNS-proxy
      git submodule update --init --recursive
    ```
 
-2. Install pip.exe
+2. install python 2.7.9
+
+
+3. Install pip.exe
 
    Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
    execute the following commands:
-   
+
    ```
    python get-pip.py
    ```
-3. Install python gevent
-   
+4. install greenlet
+
+   ```
+   C:\Python27\Scripts\pip.exe install greenlet
+   ```
+
+5. install Microsoft Visual C++ Compiler for Python 2.7
+
+  [Download link](http://www.microsoft.com/en-us/download/details.aspx?id=44266)
+
+6. Install python gevent
+
    ```
    C:\Python27\Scripts\pip.exe install gevent
    ```
+
+7. install py2exe
+
+   [Download link](http://sourceforge.net/projects/py2exe/files/py2exe/0.6.9/)
+
+8. execute toexe.bat
 
 
 LICENSE
