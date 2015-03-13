@@ -239,6 +239,12 @@ def check_dns_packet(data, q_type):
     else:
         Flags = data[4:6]
 
+    Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
+
+    # TODO: need more check
+    if Reply_code == 3:
+        return True
+
     if q_type == 0x0001:
 
         ipv4_len = data[-6:-4]
@@ -262,7 +268,6 @@ def check_dns_packet(data, q_type):
         if not (test_ipv4 or test_ipv6):
             return False
 
-    Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
     return Reply_code == 0
 
 
