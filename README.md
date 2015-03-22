@@ -58,7 +58,7 @@ Configuration file
     "lru_cache_size"  : 100,
     "udp_mode"        : false,
     "daemon_process"  : false,
-    "private_host"    : {"*google.com": "203.117.34.162"},
+    "private_host"    : {"*google.com": "203.117.34.162"}
 }
 
 
