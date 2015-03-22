@@ -1,2 +1,2 @@
-python toexe.py py2exe -d ./
+pyInstaller -F ../tcpdns.py
 pause

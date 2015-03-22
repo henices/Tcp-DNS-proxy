@@ -327,7 +327,7 @@ def transfer(querydata, addr, server):
 
 
 
-def HideC():
+def HideConsole():
     if os.name == 'nt':
         whnd = ctypes.windll.kernel32.GetConsoleWindow()
         if whnd != 0:
@@ -397,8 +397,6 @@ if __name__ == "__main__":
     logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
     logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
 
-    if cfg['hide']:
-        HideC()
     
     if cfg['speed_test']:
         TestSpeed()
@@ -408,7 +406,7 @@ if __name__ == "__main__":
 
     if cfg['daemon_process']:
         if os.name == 'nt':
-            raise Exception("Windows doesn't support daemon process")
+            HideConsole()
         else:
             try:
                 import daemon
