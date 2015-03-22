@@ -326,6 +326,16 @@ def transfer(querydata, addr, server):
         logging.error('Tried many times and failed to resolve %s' % q_domain)
 
 
+
+def HideC():
+    if os.name == 'nt':
+        whnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if whnd != 0:
+            ctypes.windll.user32.ShowWindow(whnd, 0)
+            ctypes.windll.kernel32.CloseHandle(whnd)
+
+
+
 class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
 
     def __init__(self, s, t):
@@ -387,6 +397,9 @@ if __name__ == "__main__":
     logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
     logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
 
+    if cfg['hide']:
+        HideC()
+    
     if cfg['speed_test']:
         TestSpeed()
 
