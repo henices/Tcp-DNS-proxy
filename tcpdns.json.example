@@ -17,4 +17,5 @@
     "udp_mode"        : false,
     "daemon_process"  : false,
     "private_host"    : {"*google.com": "203.117.34.162"}
+    "hide" : true
 }
