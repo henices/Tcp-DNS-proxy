@@ -92,7 +92,7 @@ INSTALL
 
 #### Windows system
 
-Use tcpdns.exe in win directory.
+Use tcpdns.bat in win directory.
 
 
 ### Manual Installation

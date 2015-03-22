@@ -38,6 +38,7 @@ from fnmatch import fnmatch
 import logging
 import third_party
 from pylru import lrucache
+import ctypes
 
 cfg = {}
 LRUCACHE = None
@@ -327,12 +328,11 @@ def transfer(querydata, addr, server):
 
 
 
-def HideConsole():
-    if os.name == 'nt':
-        whnd = ctypes.windll.kernel32.GetConsoleWindow()
-        if whnd != 0:
-            ctypes.windll.user32.ShowWindow(whnd, 0)
-            ctypes.windll.kernel32.CloseHandle(whnd)
+def HideCMD():
+    whnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if whnd != 0:
+        ctypes.windll.user32.ShowWindow(whnd, 0)
+        ctypes.windll.kernel32.CloseHandle(whnd)
 
 
 
@@ -360,7 +360,6 @@ def thread_main(cfg):
     server.shutdown()
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='TCP DNS Proxy')
     parser.add_argument('-f', dest='config_json', type=argparse.FileType('r'),
             required=True, help='Json config file')
@@ -397,22 +396,21 @@ if __name__ == "__main__":
     logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
     logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
 
-    
-    if cfg['speed_test']:
-        TestSpeed()
-
-    logging.info(
-            'Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"]))
-
     if cfg['daemon_process']:
         if os.name == 'nt':
-            HideConsole()
+            HideCMD()
         else:
             try:
                 import daemon
                 logging.info('Run code in daemon process')
             except ImportError:
                 logging.error('Please install python-daemon')
+
+    if cfg['speed_test']:
+        TestSpeed()
+
+    logging.info(
+            'Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"]))
 
     try:
         with daemon.DaemonContext(detach_process=True):
