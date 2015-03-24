@@ -75,7 +75,7 @@ Dependencies
 ### python moudules
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
-   * [python-daemon] (https://pypi.python.org/pypi/python-daemon)
+   * [python-daemon] (https://pypi.python.org/pypi/python-daemon) (Windows does not need)
 
 INSTALL
 ---------------------
@@ -92,7 +92,7 @@ INSTALL
 
 #### Windows system
 
-Use tcpdns.exe in win directory.
+Use tcpdns.bat in win directory.
 
 
 ### Manual Installation
@@ -121,6 +121,8 @@ Use tcpdns.exe in win directory.
 
    In order to build gevent library you should install Visual Studio, 
    although tcpdns.py can run perfectly without python gevent.
+   If you cannot run "C:\Python27\Scripts\pip.exe" in the CMD,
+   you can try "C:\Python27\python.exe -m pip".
 
 
 1. Pull the submodule source code.
@@ -156,9 +158,9 @@ Use tcpdns.exe in win directory.
    C:\Python27\Scripts\pip.exe install gevent
    ```
 
-7. install py2exe
+7. install pyinstaller
 
-   [Download link](http://sourceforge.net/projects/py2exe/files/py2exe/0.6.9/)
+   C:\Python27\Scripts\pip.exe install pyinstaller
 
 8. execute toexe.bat
 
