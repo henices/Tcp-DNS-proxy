@@ -160,8 +160,10 @@ Use tcpdns.bat in win directory.
 
 7. install pyinstaller
 
+   ```
    C:\Python27\Scripts\pip.exe install pyinstaller
-
+   ```
+   
 8. execute toexe.bat
 
 
