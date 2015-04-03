@@ -401,17 +401,18 @@ if __name__ == "__main__":
     logging.info('Enable Cache: %r' % (cfg['enable_lru_cache']))
     logging.info('Enable Switch: %r' % (cfg['enable_server_switch']))
 
-    if cfg['daemon_process']:
-        if os.name == 'nt':
-            HideCMD()
-        else:
-            d = RunDaemon('/tmp/tcpdns.pid')
-            d.start()
-
     if cfg['speed_test']:
         TestSpeed()
 
     logging.info(
             'Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"]))
 
-    thread_main(cfg)
+    if cfg['daemon_process']:
+        if os.name == 'nt':
+            HideCMD()
+            thread_main(cfg)
+        else:
+            d = RunDaemon('/tmp/tcpdns.pid')
+            d.start()
+    else:
+        thread_main(cfg)
