@@ -75,7 +75,7 @@ Dependencies
 ### python moudules
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
-   * [python-daemon] (https://pypi.python.org/pypi/python-daemon) (Windows does not need)
+   * [python-daemon] (https://github.com/serverdensity/python-daemon) (Windows does not need)
 
 INSTALL
 ---------------------
