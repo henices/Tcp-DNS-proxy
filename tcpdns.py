@@ -354,6 +354,13 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
+
+from daemon import Daemon
+class RunDaemon(Daemon):
+
+    def run(self):
+        thread_main(cfg)
+
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
@@ -380,8 +387,6 @@ if __name__ == "__main__":
     if not cfg.has_key("port"):
         cfg["port"] = 53
 
-    server = thread_main
-
     if cfg['udp_mode']:
         DNS_SERVERS = cfg['udp_dns_server']
     else:
@@ -400,11 +405,8 @@ if __name__ == "__main__":
         if os.name == 'nt':
             HideCMD()
         else:
-            try:
-                import daemon
-                logging.info('Run code in daemon process')
-            except ImportError:
-                logging.error('Please install python-daemon')
+            d = RunDaemon('/tmp/tcpdns.pid')
+            d.start()
 
     if cfg['speed_test']:
         TestSpeed()
@@ -412,8 +414,4 @@ if __name__ == "__main__":
     logging.info(
             'Now you can set dns server to %s:%s' % (cfg["host"], cfg["port"]))
 
-    try:
-        with daemon.DaemonContext(detach_process=True):
-            server(cfg)
-    except:
-        server(cfg)
+    thread_main(cfg)
