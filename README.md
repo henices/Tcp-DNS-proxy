@@ -59,7 +59,7 @@ Configuration file
     "udp_mode"        : false,
     "daemon_process"  : false,
     "internal_dns_server": ["192.168.1.1:53"],
-    "internal_domain":["*intra*"],
+    "internal_domain": ["*intra*"],
     "private_host"    : {"*google.com": "203.117.34.162"}
 }
 
@@ -94,7 +94,7 @@ INSTALL
 
 #### Windows system
 
-Use tcpdns.bat in win directory.
+Use tcpdns.exe in win directory.
 
 
 ### Manual Installation
