@@ -58,6 +58,8 @@ Configuration file
     "lru_cache_size"  : 100,
     "udp_mode"        : false,
     "daemon_process"  : false,
+    "internal_dns_server": ["192.168.1.1:53"],
+    "internal_domain":["*intra*"],
     "private_host"    : {"*google.com": "203.117.34.162"}
 }
 
