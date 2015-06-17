@@ -43,8 +43,11 @@ import ctypes
 cfg = {}
 LRUCACHE = None
 DNS_SERVERS = None
+FAST_SERVERS = None
 SPEED = {}
 DATA = {'err_counter': 0, 'speed_test': False}
+UDPMODE = False
+
 
 def cfg_logging(dbg_level):
     """ logging format
@@ -112,6 +115,7 @@ def dnsping(ip, port):
 
 def TestSpeed():
     global DNS_SERVERS
+    global FAST_SERVERS
     global DATA
 
     DATA['speed_test'] = True
@@ -135,7 +139,8 @@ def TestSpeed():
         cost[k] = sum(v)
 
     d = sorted(cost, key=cost.get)
-    DNS_SERVERS = d[:3]
+    FAST_SERVERS = d[:3]
+    DNS_SERVERS = FAST_SERVERS
 
     DATA['err_counter'] = 0
     DATA['speed_test'] = False
@@ -157,19 +162,15 @@ def QueryDNS(server, port, querydata):
     if DATA['err_counter'] >= 10 and not DATA['speed_test']:
         TestSpeed()
 
-    if cfg['udp_mode']:
-        sendbuf = querydata
-    else:
-        # length
-        Buflen = struct.pack('!h', len(querydata))
-        sendbuf = Buflen + querydata
+    # length
+    Buflen = struct.pack('!h', len(querydata))
+    sendbuf = UDPMODE and querydata or Buflen + querydata
 
     data = None
     try:
-        if not cfg['udp_mode']:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        protocol = UDPMODE and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        s = socket.socket(socket.AF_INET, protocol)
+
         # set socket timeout
         s.settimeout(cfg['socket_timeout'])
         s.connect((server, int(port)))
@@ -229,16 +230,15 @@ def private_dns_response(data):
 
 def check_dns_packet(data, q_type):
 
+    global UDPMODE
+
     test_ipv4 = False
     test_ipv6 = False
 
     if len(data) < 12:
         return False
 
-    if cfg['udp_mode']:
-        Flags = data[2:4]
-    else:
-        Flags = data[4:6]
+    Flags = UDPMODE and data[2:4] or data[4:6]
 
     Reply_code = struct.unpack('>h', Flags)[0] & 0x000F
 
@@ -283,6 +283,7 @@ def transfer(querydata, addr, server):
     Returns:
         None
     """
+    global UDPMODE
 
     if len(querydata) < 12:
         return
@@ -296,18 +297,30 @@ def transfer(querydata, addr, server):
         server.sendto(response, addr)
         return
 
+    UDPMODE = cfg['udp_mode']
+    if FAST_SERVERS:
+        DNS_SERVERS = FAST_SERVERS
+    else:
+        DNS_SERVERS = \
+                UDPMODE and cfg['udp_dns_server'] or cfg['tcp_dns_server']
+
+    if cfg['internal_dns_server'] and cfg['internal_domain']:
+        for item in cfg['internal_domain']:
+            if fnmatch(q_domain, item):
+                UDPMODE = True
+                DNS_SERVERS = cfg['internal_dns_server']
+
     if LRUCACHE and  key in LRUCACHE:
         response = LRUCACHE[key]
-        if cfg['udp_mode']:
-            server.sendto(t_id + response[2:], addr)
-        else:
-            server.sendto(t_id + response[4:], addr)
+        sendbuf = UDPMODE and response[2:] or response[4:]
+        server.sendto(t_id + sendbuf, addr)
 
         return
 
     for item in DNS_SERVERS:
         ip, port = item.split(':')
 
+        logging.debug("server: %s port:%s" % (ip, port))
         response = QueryDNS(ip, port, querydata)
         if response is None or not check_dns_packet(response, q_type):
             continue
@@ -315,17 +328,13 @@ def transfer(querydata, addr, server):
         if LRUCACHE is not None:
             LRUCACHE[key] = response
 
-        if cfg['udp_mode']:
-            server.sendto(response, addr)
-        else:
-            # udp dns packet no length
-            server.sendto(response[2:], addr)
+        sendbuf = UDPMODE and response or response[2:]
+        server.sendto(sendbuf, addr)
 
         break
 
     if response is None:
         logging.error('Tried many times and failed to resolve %s' % q_domain)
-
 
 
 def HideCMD():
