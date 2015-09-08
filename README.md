@@ -62,10 +62,15 @@ Configuration file
     "internal_domain": ["*intra*"],
     "private_host"    : {"*google.com": "203.117.34.162"}
 }
-
-
-
 ```
+* **enable_server_switch**: switch dns servers if network is slow
+* **speed_test**          : test dns server speed on startup
+* **enable_lru_cache**    : use lru cache to store dns server responses
+* **udp_mode**            : use udp dns procotol, default is tcp dns protocol
+* **daemon_process**      : daemon process on *nix platform
+* **internal_dns_server** : internal dns server on internal network
+* **internal_domain**     : internal domains which use internal dns server to get ip address
+* **private_host**        : like /etc/hosts on *nix platform
 
   
 Dependencies
