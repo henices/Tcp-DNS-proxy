@@ -364,11 +364,7 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         transfer(data, addr, socket)
 
 
-from daemon import Daemon
-class RunDaemon(Daemon):
-
-    def run(self):
-        thread_main(cfg)
+import daemon
 
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
@@ -421,7 +417,7 @@ if __name__ == "__main__":
             HideCMD()
             thread_main(cfg)
         else:
-            d = RunDaemon('/tmp/tcpdns.pid')
-            d.start()
+            with daemon.DaemonContext():
+                thread_main(cfg)
     else:
         thread_main(cfg)
