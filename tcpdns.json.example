@@ -13,7 +13,7 @@
     "enable_server_switch": true,
     "speed_test"      : false,
     "enable_lru_cache": true,
-    "lru_cache_size"  : 100,
+    "lru_cache_size"  : 500,
     "udp_mode"        : false,
     "daemon_process"  : false,
     "internal_dns_server": ["192.168.1.1:53"],

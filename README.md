@@ -18,7 +18,7 @@ How to use this python script ?
 3.    run the script
 
   ```bash
-  $ sudo python tcpdns.py -f tcpdns.json
+  $ sudo python tcpdns.py -f tcpdns.json.example
   ```
   
 Commandline
@@ -55,7 +55,7 @@ Configuration file
     "enable_server_switch": true,
     "speed_test": true,
     "enable_lru_cache": true,
-    "lru_cache_size"  : 100,
+    "lru_cache_size"  : 500,
     "udp_mode"        : false,
     "daemon_process"  : false,
     "internal_dns_server": ["192.168.1.1:53"],
