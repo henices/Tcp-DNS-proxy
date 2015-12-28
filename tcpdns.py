@@ -39,6 +39,7 @@ import logging
 import third_party
 from pylru import lrucache
 import ctypes
+import sys
 
 cfg = {}
 LRUCACHE = None
@@ -47,6 +48,7 @@ FAST_SERVERS = None
 SPEED = {}
 DATA = {'err_counter': 0, 'speed_test': False}
 UDPMODE = False
+PIDFILE = '/tmp/tcpdns.pid'
 
 
 def cfg_logging(dbg_level):
@@ -370,6 +372,9 @@ class RunDaemon(Daemon):
     def run(self):
         thread_main(cfg)
 
+def StopDaemon():
+    RunDaemon(PIDFILE).stop()
+
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
@@ -378,17 +383,27 @@ def thread_main(cfg):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='TCP DNS Proxy')
     parser.add_argument('-f', dest='config_json', type=argparse.FileType('r'),
-            required=True, help='Json config file')
+            required=False, help='Json config file')
     parser.add_argument('-d', dest='dbg_level', action='store_true',
             required=False, default=False, help='Print debug message')
+    parser.add_argument('-s', dest="stop_daemon", action='store_true',
+            required=False, default=False, help='Stop tcp dns proxy daemon')
     args = parser.parse_args()
+
+    if args.stop_daemon:
+        StopDaemon()
+        sys.exit(0)
 
     if args.dbg_level:
         cfg_logging(logging.DEBUG)
     else:
         cfg_logging(logging.INFO)
 
-    cfg = json.load(args.config_json)
+    try:
+        cfg = json.load(args.config_json)
+    except:
+        logging.error('Loading json config file error [!!]')
+        sys.exit(1)
 
     if not cfg.has_key("host"):
         cfg["host"] = "0.0.0.0"
@@ -421,7 +436,7 @@ if __name__ == "__main__":
             HideCMD()
             thread_main(cfg)
         else:
-            d = RunDaemon('/tmp/tcpdns.pid')
+            d = RunDaemon(PIDFILE)
             d.start()
     else:
         thread_main(cfg)
