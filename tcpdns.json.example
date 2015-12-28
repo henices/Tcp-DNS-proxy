@@ -11,7 +11,7 @@
                        "209.244.0.3:53"],
     "udp_dns_server": ["208.67.222.222:5353"],
     "enable_server_switch": true,
-    "speed_test"      : true,
+    "speed_test"      : false,
     "enable_lru_cache": true,
     "lru_cache_size"  : 100,
     "udp_mode"        : false,
