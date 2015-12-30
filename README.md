@@ -33,6 +33,7 @@ optional arguments:
   -h, --help      show this help message and exit
   -f CONFIG_JSON  Json config file
   -d              Print debug message
+  -s              Stop tcp dns proxy daemon
 ```
 
   
