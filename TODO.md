@@ -4,4 +4,4 @@
 - [X] gevent base udp server
 - [X] custom host file
 - [X] internal dns server support
-- [ ] daemon code refactor
+- [X] daemon code refactor
