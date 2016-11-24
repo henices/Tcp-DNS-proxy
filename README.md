@@ -20,6 +20,12 @@ How to use this python script ?
   ```bash
   $ sudo python tcpdns.py -f tcpdns.json.example
   ```
+4.   stop the daemon process
+
+  ```bash
+  $ sudo python tcpdns.py -s
+  ```
+
   
 Commandline
 ----------------------------
