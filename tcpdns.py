@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # cody by zhouzhenster@gmail.com
 
@@ -30,7 +30,10 @@ import gevent
 import os
 import socket
 import struct
-import SocketServer
+try:
+    import SocketServer
+except:
+    import socketserver as SocketServer
 import argparse
 import json
 import time
@@ -40,6 +43,9 @@ import third_party
 from pylru import lrucache
 import ctypes
 import sys
+
+import binascii
+import daemon
 
 cfg = {}
 LRUCACHE = None
@@ -76,7 +82,7 @@ def bytetodomain(s):
 
     03www06google02cn00 => www.google.cn
     """
-    domain = ''
+    domain = b''
     i = 0
     length = struct.unpack('!B', s[0:1])[0]
 
@@ -86,7 +92,7 @@ def bytetodomain(s):
         i += length
         length = struct.unpack('!B', s[i:i + 1])[0]
         if length != 0:
-            domain += '.'
+            domain += b'.'
 
     return domain
 
@@ -108,6 +114,9 @@ def dnsping(ip, port):
         logging.error('%s:%s, %s' % (ip, port, str(e)))
     else:
         cost = time.time() - begin
+    finally:
+        if s:
+            s.close()
 
     key = '%s:%d' % (ip, int(port))
     if key not in SPEED:
@@ -129,6 +138,7 @@ def TestSpeed():
 
     logging.info('Testing dns server speed ...')
     jobs = []
+
     for i in xrange(0, 6):
         for s in servers:
             ip, port = s.split(':')
@@ -140,9 +150,13 @@ def TestSpeed():
     for k, v in SPEED.items():
         cost[k] = sum(v)
 
+    logging.info('TestSpeed result:\n%s' % cost)
+
     d = sorted(cost, key=cost.get)
     FAST_SERVERS = d[:3]
     DNS_SERVERS = FAST_SERVERS
+
+    logging.info('DNS SERVER:\n%s' % DNS_SERVERS)
 
     DATA['err_counter'] = 0
     DATA['speed_test'] = False
@@ -292,7 +306,7 @@ def transfer(querydata, addr, server):
 
     response = None
     t_id = querydata[:2]
-    key = querydata[2:].encode('hex')
+    key = binascii.hexlify(querydata[2:])
 
     q_type, q_domain, response = private_dns_response(querydata)
     if response:
@@ -308,11 +322,12 @@ def transfer(querydata, addr, server):
 
     if cfg['internal_dns_server'] and cfg['internal_domain']:
         for item in cfg['internal_domain']:
-            if fnmatch(q_domain, item):
+            if fnmatch(q_domain, item.encode('utf-8')):
                 UDPMODE = True
                 DNS_SERVERS = cfg['internal_dns_server']
 
     if LRUCACHE and  key in LRUCACHE:
+        logging.debug('Hit LRU cache, Speed up ...')
         response = LRUCACHE[key]
         sendbuf = UDPMODE and response[2:] or response[4:]
         server.sendto(t_id + sendbuf, addr)
@@ -365,16 +380,6 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
-
-from daemon import Daemon
-class RunDaemon(Daemon):
-
-    def run(self):
-        thread_main(cfg)
-
-def StopDaemon():
-    RunDaemon(PIDFILE).stop()
-
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
@@ -405,10 +410,10 @@ if __name__ == "__main__":
         logging.error('Loading json config file error [!!]')
         sys.exit(1)
 
-    if not cfg.has_key("host"):
+    if 'host' not in cfg:
         cfg["host"] = "0.0.0.0"
 
-    if not cfg.has_key("port"):
+    if 'port' not in cfg:
         cfg["port"] = 53
 
     if cfg['udp_mode']:
@@ -436,7 +441,7 @@ if __name__ == "__main__":
             HideCMD()
             thread_main(cfg)
         else:
-            d = RunDaemon(PIDFILE)
-            d.start()
+            with daemon.DaemonContext():
+                thread_main(cfg)
     else:
         thread_main(cfg)
