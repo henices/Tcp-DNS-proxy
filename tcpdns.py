@@ -69,7 +69,7 @@ def hexdump(src, width=16):
     FILTER = ''.join(
         [(x < 0x7f and x > 0x1f) and chr(x) or '.' for x in range(256)])
     result = []
-    for i in xrange(0, len(src), width):
+    for i in range(0, len(src), width):
         s = src[i:i + width]
         hexa = ' '.join(["%02X" % ord(x) for x in s])
         printable = s.translate(FILTER)
@@ -198,11 +198,11 @@ def QueryDNS(server, port, querydata):
     finally:
         if s:
             s.close()
-        return data
+    return data
 
 
 def private_dns_response(data):
-    ret = None
+    ret = b''
 
     TID = data[0:2]
     Questions = data[4:6]
@@ -219,27 +219,30 @@ def private_dns_response(data):
         if q_type != 0x0001:
             return
 
-        if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
-            AuthorityRRs != '\x00\x00' or AdditionalRRs != '\x00\x00':
+        if Questions != b'\x00\x01' or AnswerRRs != b'\x00\x00' or \
+            AuthorityRRs != b'\x00\x00' or AdditionalRRs != b'\x00\x00':
                 return
 
         items = cfg['private_host'].items()
 
         for domain, ip in items:
-            if fnmatch(q_domain, domain):
+            if fnmatch(q_domain, domain.encode('utf-8')):
+                logging.debug('match private host')
                 ret = TID
-                ret += '\x81\x80'
-                ret += '\x00\x01'
-                ret += '\x00\x01'
-                ret += '\x00\x00'
-                ret += '\x00\x00'
+                ret += b'\x81\x80'
+                ret += b'\x00\x01'
+                ret += b'\x00\x01'
+                ret += b'\x00\x00'
+                ret += b'\x00\x00'
                 ret += data[12:]
-                ret += '\xc0\x0c'
-                ret += '\x00\x01'
-                ret += '\x00\x01'
-                ret += '\x00\x00\xff\xff'
-                ret += '\x00\x04'
-                ret +=  socket.inet_aton(ip)
+                ret += b'\xc0\x0c'
+                ret += b'\x00\x01'
+                ret += b'\x00\x01'
+                ret += b'\x00\x00\xff\xff'
+                ret += b'\x00\x04'
+                ret += socket.inet_aton(ip)
+            else:
+                logging.debug('private host not match')
     finally:
         return (q_type, q_domain, ret)
 
@@ -268,9 +271,9 @@ def check_dns_packet(data, q_type):
         ipv4_answer_class = data[-12:-10]
         ipv4_answer_type = data[-14:-12]
 
-        test_ipv4 = (ipv4_len == '\x00\x04' and \
-                     ipv4_answer_class == '\x00\x01' and \
-                     ipv4_answer_type == '\x00\x01')
+        test_ipv4 = (ipv4_len == b'\x00\x04' and \
+                     ipv4_answer_class == b'\x00\x01' and \
+                     ipv4_answer_type == b'\x00\x01')
 
         if not test_ipv4:
 
@@ -278,9 +281,9 @@ def check_dns_packet(data, q_type):
             ipv6_answer_class = data[-24:-22]
             ipv6_answer_type =data[-26:-24]
 
-            test_ipv6 = (ipv6_len == '\x00\x10' and \
-                         ipv6_answer_class == '\x00\x01' and \
-                         ipv6_answer_type == '\x00\x1c')
+            test_ipv6 = (ipv6_len == b'\x00\x10' and \
+                         ipv6_answer_class == b'\x00\x01' and \
+                         ipv6_answer_type == b'\x00\x1c')
 
         if not (test_ipv4 or test_ipv6):
             return False
@@ -337,9 +340,10 @@ def transfer(querydata, addr, server):
     for item in DNS_SERVERS:
         ip, port = item.split(':')
 
-        logging.debug("server: %s port:%s" % (ip, port))
+        logging.debug("query server: %s port:%s" % (ip, port))
         response = QueryDNS(ip, port, querydata)
         if response is None or not check_dns_packet(response, q_type):
+            logging.error('QueryDNS error, retry next server ...')
             continue
 
         if LRUCACHE is not None:
@@ -394,10 +398,6 @@ if __name__ == "__main__":
     parser.add_argument('-s', dest="stop_daemon", action='store_true',
             required=False, default=False, help='Stop tcp dns proxy daemon')
     args = parser.parse_args()
-
-    if args.stop_daemon:
-        StopDaemon()
-        sys.exit(0)
 
     if args.dbg_level:
         cfg_logging(logging.DEBUG)
