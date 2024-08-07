@@ -63,19 +63,19 @@ def cfg_logging(dbg_level):
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s',
                         level=dbg_level)
 
-def hexdump(src, width=16):
+def hexdump(src, length=16, sep='.'):
     """ hexdump, default width 16
     """
-    FILTER = ''.join(
-        [(x < 0x7f and x > 0x1f) and chr(x) or '.' for x in range(256)])
-    result = []
-    for i in range(0, len(src), width):
-        s = src[i:i + width]
-        hexa = ' '.join(["%02X" % ord(x) for x in s])
-        printable = s.translate(FILTER)
-        result.append("%04X   %s   %s\n" % (i, hexa, printable))
-    return ''.join(result)
-
+    FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or sep for x in range(256)])
+    lines = []
+    for c in range(0, len(src), length):
+        chars = src[c: c + length]
+        hex_ = ' '.join(['{:02x}'.format(x) for x in chars])
+        if len(hex_) > 24:
+            hex_ = '{} {}'.format(hex_[:24], hex_[24:])
+        printable = ''.join(['{}'.format((x <= 127 and FILTER[x]) or sep) for x in chars])
+        lines.append('{0:08x}  {1:{2}s} |{3:{4}s}|'.format(c, hex_, length * 3, printable, length))
+    return '\n'.join(lines)
 
 def bytetodomain(s):
     """bytetodomain
