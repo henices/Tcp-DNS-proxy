@@ -54,7 +54,6 @@ FAST_SERVERS = None
 SPEED = {}
 DATA = {'err_counter': 0, 'speed_test': False}
 UDPMODE = False
-PIDFILE = '/tmp/tcpdns.pid'
 
 
 def cfg_logging(dbg_level):
@@ -395,8 +394,6 @@ if __name__ == "__main__":
             required=False, help='Json config file')
     parser.add_argument('-d', dest='dbg_level', action='store_true',
             required=False, default=False, help='Print debug message')
-    parser.add_argument('-s', dest="stop_daemon", action='store_true',
-            required=False, default=False, help='Stop tcp dns proxy daemon')
     args = parser.parse_args()
 
     if args.dbg_level:
