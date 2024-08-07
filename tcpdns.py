@@ -97,10 +97,10 @@ def bytetodomain(s):
     return domain
 
 def dnsping(ip, port):
-    buff =  "\x00\x1d\xb2\x5f\x01\x00\x00\x01"
-    buff += "\x00\x00\x00\x00\x00\x00\x07\x74"
-    buff += "\x77\x69\x74\x74\x65\x72\x03\x63"
-    buff += "\x6f\x6d\x00\x00\x01\x00\x01"
+    #buff =  b"\x00\x1d\xb2\x5f\x01\x00\x00\x01"
+    #buff += b"\x00\x00\x00\x00\x00\x00\x07\x74"
+    #buff += b"\x77\x69\x74\x74\x65\x72\x03\x63"
+    #buff += b"\x6f\x6d\x00\x00\x01\x00\x01"
 
     cost = 100
     begin = time.time()
@@ -108,8 +108,8 @@ def dnsping(ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(cfg['socket_timeout'])
         s.connect((ip, int(port)))
-        s.send(buff)
-        s.recv(2048)
+        #s.send(buff)
+        #s.recv(2048)
     except Exception as e:
         logging.error('%s:%s, %s' % (ip, port, str(e)))
     else:
@@ -139,7 +139,7 @@ def TestSpeed():
     logging.info('Testing dns server speed ...')
     jobs = []
 
-    for i in xrange(0, 6):
+    for i in range(0, 10):
         for s in servers:
             ip, port = s.split(':')
             jobs.append(gevent.spawn(dnsping, ip, port))
