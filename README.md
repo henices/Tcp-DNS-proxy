@@ -20,13 +20,7 @@ How to use this python script ?
   ```bash
   $ sudo python tcpdns.py -f tcpdns.json.example
   ```
-4.   stop the daemon process
 
-  ```bash
-  $ sudo python tcpdns.py -s
-  ```
-
-  
 Commandline
 ----------------------------
 
@@ -39,10 +33,8 @@ optional arguments:
   -h, --help      show this help message and exit
   -f CONFIG_JSON  Json config file
   -d              Print debug message
-  -s              Stop tcp dns proxy daemon
 ```
 
-  
 Configuration file
 ----------------------------
 
@@ -79,7 +71,6 @@ Configuration file
 * **internal_domain**     : internal domains which use internal dns server to get ip address
 * **private_host**        : like /etc/hosts on *nix platform
 
-  
 Dependencies
 ----------------------------
 
@@ -89,97 +80,25 @@ Dependencies
 ### python moudules
    * [gevent] (https://github.com/surfly/gevent)
    * [pylru] (https://github.com/jlhutch/pylru)
-   * [python-daemon] (https://github.com/serverdensity/python-daemon) (Windows does not need)
+   * [python-daemon] (https://pagure.io/python-daemon/) (Windows does not need)
 
 INSTALL
 ---------------------
 
-### Super-quick installation
 
-#### Linux system
+### Linux system
 
 ```bash
 
-  chmod +x ./install.sh
-  ./install.sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txt
+sudo .venv/bin/python3 tcpdns.py -f tcpdns.json.example -d
 ```
 
-#### Windows system
+### Windows system
 
 Use tcpdns.exe in win directory.
-
-
-### Manual Installation
-
-
-#### Ubuntu or Debian installation guide
-
-1. Use the following commands to install python modules
-
-   ```bash
-   
-     sudo apt-get install libevent-dev
-     sudo apt-get install python-pip
-     sudo pip install gevent
-     sudo pip install python-daemon
-   ```
-
-2. Pull the submodule source code.
-
-   ```bash
-     cd Tcp-DNS-proxy
-     git submodule update --init --recursive
-   ```
-
-#### Windows installation guide
-
-   In order to build gevent library you should install Visual Studio, 
-   although tcpdns.py can run perfectly without python gevent.
-   If you cannot run "C:\Python27\Scripts\pip.exe" in the CMD,
-   you can try "C:\Python27\python.exe -m pip".
-
-
-1. Pull the submodule source code.
-   ```bash
-     cd Tcp-DNS-proxy
-     git submodule update --init --recursive
-   ```
-
-2. install python 2.7.9
-
-
-3. Install pip.exe
-
-   Download get-pip.py from [get-pip.py](https://raw.github.com/pypa/pip/master/contrib/get-pip.py),
-   execute the following commands:
-
-   ```
-   python get-pip.py
-   ```
-4. install greenlet
-
-   ```
-   C:\Python27\Scripts\pip.exe install greenlet
-   ```
-
-5. install Microsoft Visual C++ Compiler for Python 2.7
-
-  [Download link](http://www.microsoft.com/en-us/download/details.aspx?id=44266)
-
-6. Install python gevent
-
-   ```
-   C:\Python27\Scripts\pip.exe install gevent
-   ```
-
-7. install pyinstaller
-
-   ```
-   C:\Python27\Scripts\pip.exe install pyinstaller
-   ```
-   
-8. execute toexe.bat
-
 
 LICENSE
 ----------------------
