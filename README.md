@@ -1,6 +1,15 @@
 
 ![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
 
+Features
+-------------------------------
+- DNS query forwarding, supports TCP DNS protocol and UDP DNS protocol
+- DNS server speed test, choose the fastest servers
+- DNS query local acceleration, use lru cache
+- DNS server automatic switching, when multiple query errors, automatically try to switch
+- Private Host, equivalent to modifying the hosts file
+- Support intranet DNS server, resolve internal domain names
+
 How to use this python script ?
 -------------------------------
 
