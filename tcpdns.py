@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # cody by zhouzhenster@gmail.com
 
@@ -30,16 +30,21 @@ import gevent
 import os
 import socket
 import struct
-import SocketServer
+try:
+    import SocketServer
+except:
+    import socketserver as SocketServer
 import argparse
 import json
 import time
 from fnmatch import fnmatch
 import logging
-import third_party
 from pylru import lrucache
 import ctypes
 import sys
+
+import binascii
+import daemon
 
 cfg = {}
 LRUCACHE = None
@@ -48,7 +53,6 @@ FAST_SERVERS = None
 SPEED = {}
 DATA = {'err_counter': 0, 'speed_test': False}
 UDPMODE = False
-PIDFILE = '/tmp/tcpdns.pid'
 
 
 def cfg_logging(dbg_level):
@@ -57,26 +61,26 @@ def cfg_logging(dbg_level):
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s',
                         level=dbg_level)
 
-def hexdump(src, width=16):
+def hexdump(src, length=16, sep='.'):
     """ hexdump, default width 16
     """
-    FILTER = ''.join(
-        [(x < 0x7f and x > 0x1f) and chr(x) or '.' for x in range(256)])
-    result = []
-    for i in xrange(0, len(src), width):
-        s = src[i:i + width]
-        hexa = ' '.join(["%02X" % ord(x) for x in s])
-        printable = s.translate(FILTER)
-        result.append("%04X   %s   %s\n" % (i, hexa, printable))
-    return ''.join(result)
-
+    FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or sep for x in range(256)])
+    lines = []
+    for c in range(0, len(src), length):
+        chars = src[c: c + length]
+        hex_ = ' '.join(['{:02x}'.format(x) for x in chars])
+        if len(hex_) > 24:
+            hex_ = '{} {}'.format(hex_[:24], hex_[24:])
+        printable = ''.join(['{}'.format((x <= 127 and FILTER[x]) or sep) for x in chars])
+        lines.append('{0:08x}  {1:{2}s} |{3:{4}s}|'.format(c, hex_, length * 3, printable, length))
+    return '\n'.join(lines)
 
 def bytetodomain(s):
     """bytetodomain
 
     03www06google02cn00 => www.google.cn
     """
-    domain = ''
+    domain = b''
     i = 0
     length = struct.unpack('!B', s[0:1])[0]
 
@@ -86,15 +90,15 @@ def bytetodomain(s):
         i += length
         length = struct.unpack('!B', s[i:i + 1])[0]
         if length != 0:
-            domain += '.'
+            domain += b'.'
 
     return domain
 
 def dnsping(ip, port):
-    buff =  "\x00\x1d\xb2\x5f\x01\x00\x00\x01"
-    buff += "\x00\x00\x00\x00\x00\x00\x07\x74"
-    buff += "\x77\x69\x74\x74\x65\x72\x03\x63"
-    buff += "\x6f\x6d\x00\x00\x01\x00\x01"
+    #buff =  b"\x00\x1d\xb2\x5f\x01\x00\x00\x01"
+    #buff += b"\x00\x00\x00\x00\x00\x00\x07\x74"
+    #buff += b"\x77\x69\x74\x74\x65\x72\x03\x63"
+    #buff += b"\x6f\x6d\x00\x00\x01\x00\x01"
 
     cost = 100
     begin = time.time()
@@ -102,12 +106,15 @@ def dnsping(ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(cfg['socket_timeout'])
         s.connect((ip, int(port)))
-        s.send(buff)
-        s.recv(2048)
+        #s.send(buff)
+        #s.recv(2048)
     except Exception as e:
         logging.error('%s:%s, %s' % (ip, port, str(e)))
     else:
         cost = time.time() - begin
+    finally:
+        if s:
+            s.close()
 
     key = '%s:%d' % (ip, int(port))
     if key not in SPEED:
@@ -129,7 +136,8 @@ def TestSpeed():
 
     logging.info('Testing dns server speed ...')
     jobs = []
-    for i in xrange(0, 6):
+
+    for i in range(0, 10):
         for s in servers:
             ip, port = s.split(':')
             jobs.append(gevent.spawn(dnsping, ip, port))
@@ -140,9 +148,13 @@ def TestSpeed():
     for k, v in SPEED.items():
         cost[k] = sum(v)
 
+    logging.info('TestSpeed result:\n%s' % cost)
+
     d = sorted(cost, key=cost.get)
     FAST_SERVERS = d[:3]
     DNS_SERVERS = FAST_SERVERS
+
+    logging.info('DNS SERVER:\n%s' % DNS_SERVERS)
 
     DATA['err_counter'] = 0
     DATA['speed_test'] = False
@@ -184,11 +196,11 @@ def QueryDNS(server, port, querydata):
     finally:
         if s:
             s.close()
-        return data
+    return data
 
 
 def private_dns_response(data):
-    ret = None
+    ret = b''
 
     TID = data[0:2]
     Questions = data[4:6]
@@ -205,27 +217,30 @@ def private_dns_response(data):
         if q_type != 0x0001:
             return
 
-        if Questions != '\x00\x01' or AnswerRRs != '\x00\x00' or \
-            AuthorityRRs != '\x00\x00' or AdditionalRRs != '\x00\x00':
+        if Questions != b'\x00\x01' or AnswerRRs != b'\x00\x00' or \
+            AuthorityRRs != b'\x00\x00' or AdditionalRRs != b'\x00\x00':
                 return
 
         items = cfg['private_host'].items()
 
         for domain, ip in items:
-            if fnmatch(q_domain, domain):
+            if fnmatch(q_domain, domain.encode('utf-8')):
+                logging.debug('match private host')
                 ret = TID
-                ret += '\x81\x80'
-                ret += '\x00\x01'
-                ret += '\x00\x01'
-                ret += '\x00\x00'
-                ret += '\x00\x00'
+                ret += b'\x81\x80'
+                ret += b'\x00\x01'
+                ret += b'\x00\x01'
+                ret += b'\x00\x00'
+                ret += b'\x00\x00'
                 ret += data[12:]
-                ret += '\xc0\x0c'
-                ret += '\x00\x01'
-                ret += '\x00\x01'
-                ret += '\x00\x00\xff\xff'
-                ret += '\x00\x04'
-                ret +=  socket.inet_aton(ip)
+                ret += b'\xc0\x0c'
+                ret += b'\x00\x01'
+                ret += b'\x00\x01'
+                ret += b'\x00\x00\xff\xff'
+                ret += b'\x00\x04'
+                ret += socket.inet_aton(ip)
+            else:
+                logging.debug('private host not match')
     finally:
         return (q_type, q_domain, ret)
 
@@ -254,9 +269,9 @@ def check_dns_packet(data, q_type):
         ipv4_answer_class = data[-12:-10]
         ipv4_answer_type = data[-14:-12]
 
-        test_ipv4 = (ipv4_len == '\x00\x04' and \
-                     ipv4_answer_class == '\x00\x01' and \
-                     ipv4_answer_type == '\x00\x01')
+        test_ipv4 = (ipv4_len == b'\x00\x04' and \
+                     ipv4_answer_class == b'\x00\x01' and \
+                     ipv4_answer_type == b'\x00\x01')
 
         if not test_ipv4:
 
@@ -264,9 +279,9 @@ def check_dns_packet(data, q_type):
             ipv6_answer_class = data[-24:-22]
             ipv6_answer_type =data[-26:-24]
 
-            test_ipv6 = (ipv6_len == '\x00\x10' and \
-                         ipv6_answer_class == '\x00\x01' and \
-                         ipv6_answer_type == '\x00\x1c')
+            test_ipv6 = (ipv6_len == b'\x00\x10' and \
+                         ipv6_answer_class == b'\x00\x01' and \
+                         ipv6_answer_type == b'\x00\x1c')
 
         if not (test_ipv4 or test_ipv6):
             return False
@@ -292,7 +307,7 @@ def transfer(querydata, addr, server):
 
     response = None
     t_id = querydata[:2]
-    key = querydata[2:].encode('hex')
+    key = binascii.hexlify(querydata[2:])
 
     q_type, q_domain, response = private_dns_response(querydata)
     if response:
@@ -308,11 +323,12 @@ def transfer(querydata, addr, server):
 
     if cfg['internal_dns_server'] and cfg['internal_domain']:
         for item in cfg['internal_domain']:
-            if fnmatch(q_domain, item):
+            if fnmatch(q_domain, item.encode('utf-8')):
                 UDPMODE = True
                 DNS_SERVERS = cfg['internal_dns_server']
 
     if LRUCACHE and  key in LRUCACHE:
+        logging.debug('Hit LRU cache, Speed up ...')
         response = LRUCACHE[key]
         sendbuf = UDPMODE and response[2:] or response[4:]
         server.sendto(t_id + sendbuf, addr)
@@ -322,9 +338,10 @@ def transfer(querydata, addr, server):
     for item in DNS_SERVERS:
         ip, port = item.split(':')
 
-        logging.debug("server: %s port:%s" % (ip, port))
+        logging.debug("query server: %s port:%s" % (ip, port))
         response = QueryDNS(ip, port, querydata)
         if response is None or not check_dns_packet(response, q_type):
+            logging.error('QueryDNS error, retry next server ...')
             continue
 
         if LRUCACHE is not None:
@@ -365,16 +382,6 @@ class ThreadedUDPRequestHandler(SocketServer.BaseRequestHandler):
         addr = self.client_address
         transfer(data, addr, socket)
 
-
-from daemon import Daemon
-class RunDaemon(Daemon):
-
-    def run(self):
-        thread_main(cfg)
-
-def StopDaemon():
-    RunDaemon(PIDFILE).stop()
-
 def thread_main(cfg):
     server = ThreadedUDPServer((cfg["host"], cfg["port"]), ThreadedUDPRequestHandler)
     server.serve_forever()
@@ -386,13 +393,7 @@ if __name__ == "__main__":
             required=False, help='Json config file')
     parser.add_argument('-d', dest='dbg_level', action='store_true',
             required=False, default=False, help='Print debug message')
-    parser.add_argument('-s', dest="stop_daemon", action='store_true',
-            required=False, default=False, help='Stop tcp dns proxy daemon')
     args = parser.parse_args()
-
-    if args.stop_daemon:
-        StopDaemon()
-        sys.exit(0)
 
     if args.dbg_level:
         cfg_logging(logging.DEBUG)
@@ -405,10 +406,10 @@ if __name__ == "__main__":
         logging.error('Loading json config file error [!!]')
         sys.exit(1)
 
-    if not cfg.has_key("host"):
+    if 'host' not in cfg:
         cfg["host"] = "0.0.0.0"
 
-    if not cfg.has_key("port"):
+    if 'port' not in cfg:
         cfg["port"] = 53
 
     if cfg['udp_mode']:
@@ -436,7 +437,7 @@ if __name__ == "__main__":
             HideCMD()
             thread_main(cfg)
         else:
-            d = RunDaemon(PIDFILE)
-            d.start()
+            with daemon.DaemonContext():
+                thread_main(cfg)
     else:
         thread_main(cfg)

@@ -1,4 +1,5 @@
-# Install with: `pip install -r requirements.txt`
+# Install with: `pip3 install -r requirements.txt`
 
-gevent >= 1.0.1
-python-daemon >= 1.5.5
+gevent
+python-daemon
+pylru

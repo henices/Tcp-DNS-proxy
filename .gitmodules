@@ -1,8 +1,0 @@
-[submodule "third_party/pylru"]
-	path = third_party/pylru
-	url = https://github.com/jlhutch/pylru.git
-	ignore = dirty
-[submodule "third_party/python-daemon"]
-	path = third_party/python-daemon
-	url = https://github.com/serverdensity/python-daemon.git
-	ignore = dirty
