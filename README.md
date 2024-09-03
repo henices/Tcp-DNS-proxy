@@ -1,6 +1,4 @@
 
-![Build Status](https://travis-ci.org/henices/Tcp-DNS-proxy.svg?branch=master)
-
 Features
 -------------------------------
 - DNS query forwarding, supports TCP DNS protocol and UDP DNS protocol
@@ -107,7 +105,7 @@ sudo .venv/bin/python3 tcpdns.py -f tcpdns.json.example -d
 
 ### Windows system
 
-Use tcpdns.exe in win directory.
+Use tcpdns.exe in win directory. (I haven't tested it on Windows 10 or 11.)
 
 LICENSE
 ----------------------
